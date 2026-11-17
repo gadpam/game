@@ -1,4 +1,4 @@
-"""Панели Системы главы 1 после авторской правки v10.
+"""Панели Системы главы 1 после авторской правки v11.
 
 Только глава 1: квест на ПРИНЯТИЕ РЕШЕНИЙ 26 -> 28, при провале
 характеристика не меняется; после матча — профиль, объяснение ИВ и магазин.
@@ -6,9 +6,9 @@
 """
 from pathlib import Path
 from fontTools.ttLib import TTFont
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 
-from grid import F, Panel, arrow, glow_text, num_change, rank_crest, sp, subbox, void_bg
+from grid import F, Panel, decorate_panel, depth_bg, glow_text, holo_card, num_change, rank_crest, sp
 
 OUT = []
 INK = (238, 246, 255)
@@ -95,26 +95,38 @@ def save(panel, safe, path):
     OUT.append(panel.save(path))
 
 
-def item_box(p, sc, y0, y1, kind, title, detail_lines, price):
-    subbox(p, p.x0 + 30, y0, p.x1 - 30, y1, alpha=102)
+def item_box(p, sc, y0, y1, kind, title, detail_lines, price, index):
+    holo_card(p, p.x0 + 30, y0, p.x1 - 30, y1, alpha=112)
+    sc.text((p.g['val'], y0 + 22), f'{index:02d}', F('m', 13), p.st['dim'] + (170,), anchor='ra')
     sc.text((p.g['lbl'], y0 + 24), kind, F('m', 15), p.st['dim'] + (230,))
     sc.text((p.g['lbl'], y0 + 52), title, F('b', 25), (248, 253, 255, 255), glow=True)
     yy = y0 + 92
     for line in detail_lines:
         sc.text((p.g['lbl'], yy), line, F('l', 16), p.st['ink'] + (225,))
         yy += 27
+
+    # Цена сидит на отдельном глубинном чипе, а не «плавает» в пустоте.
+    chip = Image.new('RGBA', (p.bw, p.bh), (0, 0, 0, 0))
+    cd = ImageDraw.Draw(chip)
+    cx0, cy0, cx1, cy1 = p.g['val'] - 142, y1 - 63, p.g['val'] + 8, y1 - 22
+    cd.polygon([(cx0 + 10, cy0), (cx1, cy0), (cx1, cy1 - 10),
+                (cx1 - 10, cy1), (cx0, cy1), (cx0, cy0 + 10)],
+               fill=(34, 27, 5, 155), outline=YEL + (100,))
+    p.lay.alpha_composite(chip)
+    p.d = ImageDraw.Draw(p.lay)
     sc.text((p.g['val'], y1 - 40), price, F('b', 24), YEL + (255,), anchor='ra', glow=YEL)
 
 
 # 14 · первый квест — одно условие, награда +2 к принятию решений
 box = (42, 76, 758, 844)
-p = Panel(void_bg('n', box, h=920), box, 'n', frame_id=None)
+p = Panel(depth_bg('n', box, h=920), box, 'n', frame_id=None)
+decorate_panel(p)
 sc = SafeText(p)
 rank_crest(p, p.cx, 142, 244, w_half=82)
 sc.text((p.cx, 192), 'F−', F('b', 58), (244, 252, 255, 255), anchor='mm', glow=True)
 sc.text((p.cx, 264), sp('КВЕСТ', 2), F('b', 26), p.st['hot'] + (252,), anchor='ma', glow=True)
 p.div(314)
-subbox(p, box[0] + 38, 342, box[2] - 38, 500, alpha=108)
+holo_card(p, box[0] + 38, 342, box[2] - 38, 500, alpha=118, active=True)
 dx = p.g['lbl'] + 2
 p.d.polygon([(dx, 409), (dx + 9, 394), (dx + 18, 409), (dx + 9, 424)],
             fill=p.st['hot'] + (245,), outline=p.st['edge'] + (255,))
@@ -131,7 +143,8 @@ save(p, sc, 'ch1/p07_quest.png')
 
 # Служебная панель выхода (не входит в ленту, но остаётся согласованной)
 box = (44, 72, 756, 496)
-p = Panel(void_bg('g', box, h=568), box, 'g', frame_id=None)
+p = Panel(depth_bg('g', box, h=568), box, 'g', frame_id=None)
+decorate_panel(p)
 sc = SafeText(p)
 sc.text((p.cx, 150), sp('ВЫХОД НА ПОЛЕ', 2), F('b', 31), p.st['hot'] + (255,), anchor='ma', glow=True)
 p.div(212)
@@ -145,11 +158,12 @@ save(p, sc, 'ch1/p18_enter.png')
 
 # 19 · провал без штрафа: решение остаётся 26
 box = (42, 76, 758, 624)
-p = Panel(void_bg('f', box, h=700), box, 'f', frame_id=None)
+p = Panel(depth_bg('f', box, h=700), box, 'f', frame_id=None)
+decorate_panel(p)
 sc = SafeText(p)
 sc.text((p.cx, 150), sp('НЕ ВЫПОЛНЕНО', 2), F('b', 34), (255, 240, 238, 255), anchor='ma', glow=True)
 p.div(214)
-subbox(p, box[0] + 40, 238, box[2] - 40, 382, alpha=110)
+holo_card(p, box[0] + 40, 238, box[2] - 40, 382, alpha=122, active=True)
 sc.text((p.cx, 264), '0 ПОТЕРЬ В СВОЕЙ ТРЕТИ', F('m', 22), p.st['ink'] + (245,), anchor='ma')
 sc.text((p.cx, 312), 'ПРИНЯТИЕ РЕШЕНИЙ 26', F('b', 28), (255, 245, 242, 255), anchor='ma', glow=True)
 sc.text((p.cx, 354), 'БЕЗ ИЗМЕНЕНИЙ', F('m', 20), p.st['dim'] + (235,), anchor='ma')
@@ -162,13 +176,14 @@ save(p, sc, 'ch1/p23_fail.png')
 
 # 24 · профиль после матча: все 12 характеристик + понятное ИВ
 box = (42, 76, 758, 1424)
-p = Panel(void_bg('n', box, h=1500), box, 'n', frame_id=None)
+p = Panel(depth_bg('n', box, h=1500), box, 'n', frame_id=None)
+decorate_panel(p)
 sc = SafeText(p, pad=(18, 58, 18, 18))
 sc.text((p.cx, 142), sp('ПРОФИЛЬ ИГРОКА', 2), F('b', 32), (245, 252, 255, 255), anchor='ma', glow=True)
 sc.text((p.cx, 188), 'ВЕТРОВ · ЦПЗ · 15 ЛЕТ', F('m', 18), p.st['dim'] + (235,), anchor='ma')
 p.div(222)
 sc.text((p.cx, 246), '12 ХАРАКТЕРИСТИК', F('m', 18), p.st['ink'] + (240,), anchor='ma')
-subbox(p, 68, 282, 732, 790, alpha=100)
+holo_card(p, 68, 282, 732, 790, alpha=112)
 p.d.line([(400, 298), (400, 774)], fill=p.st['edge'] + (85,), width=1)
 left = STATS[:6]
 right = STATS[6:]
@@ -188,13 +203,13 @@ sc.text((p.cx, 892), 'квест не выполнен · характерист
 p.div(928)
 sc.text((p.cx, 956), 'ИВ — ИНДЕКС ВЛИЯНИЯ', F('b', 26), p.st['hot'] + (255,), anchor='ma', glow=True)
 sc.text((p.cx, 1000), f'ТЕКУЩИЙ БАЛАНС · {IV}', F('m', 22), YEL + (250,), anchor='ma')
-subbox(p, 90, 1042, 710, 1252, alpha=105)
+holo_card(p, 90, 1042, 710, 1252, alpha=116)
 sc.text((p.cx, 1080), 'ОЧКИ ИВ НАЧИСЛЯЮТСЯ ЗА ДЕЙСТВИЯ,', F('m', 17), p.st['ink'] + (240,), anchor='ma')
 sc.text((p.cx, 1114), 'КОТОРЫЕ МЕНЯЮТ ХОД МАТЧА', F('b', 20), p.st['hot'] + (250,), anchor='ma')
 sc.text((p.cx, 1170), 'очки накапливаются', F('l', 18), p.st['dim'] + (225,), anchor='ma')
 sc.text((p.cx, 1204), 'и расходуются в магазине влияния', F('l', 18), p.st['dim'] + (225,), anchor='ma')
 p.div(1284)
-subbox(p, 218, 1302, 582, 1386, alpha=105)
+holo_card(p, 218, 1302, 582, 1386, alpha=124, active=True)
 sc.text((p.cx, 1318), 'ВКЛАДКА «МАГАЗИН»', F('m', 19), p.st['ink'] + (245,), anchor='ma')
 sc.text((p.cx, 1356), 'коснись, чтобы открыть', F('l', 16), p.st['dim'] + (220,), anchor='ma')
 save(p, sc, 'ch1/p37_day.png')
@@ -203,7 +218,8 @@ save(p, sc, 'ch1/p37_day.png')
 # 27 · длинный магазин влияния: 10 товаров, все недоступны при балансе 68
 SHOP_H = 2500
 box = (42, 76, 758, SHOP_H - 76)
-p = Panel(void_bg('n', box, h=SHOP_H), box, 'n', frame_id=None)
+p = Panel(depth_bg('n', box, h=SHOP_H), box, 'n', frame_id=None)
+decorate_panel(p)
 sc = SafeText(p, pad=(18, 58, 18, 18))
 sc.text((p.cx, 142), sp('МАГАЗИН ВЛИЯНИЯ', 2), F('b', 31), (245, 252, 255, 255), anchor='ma', glow=True)
 sc.text((p.cx, 190), f'БАЛАНС · {IV} ИВ', F('m', 21), YEL + (250,), anchor='ma')
@@ -212,11 +228,10 @@ p.div(250)
 for i, (kind, title, lines, price) in enumerate(SHOP_ITEMS):
     y0 = 278 + i * 200
     item_box(p, sc, y0, y0 + 180, kind, title, lines,
-             f'{price:,}'.replace(',', ' ') + ' ИВ')
+             f'{price:,}'.replace(',', ' ') + ' ИВ', i + 1)
 p.div(2298)
-sc.text((p.cx, 2324), 'НЕДОСТАТОЧНО ИВ', F('b', 24), RED + (255,), anchor='ma', glow=RED)
-sc.text((p.cx, 2366), 'минимальная цена · 1 000 ИВ', F('m', 18), p.st['dim'] + (230,), anchor='ma')
-sc.text((p.cx, 2386), 'покупка недоступна', F('l', 17), p.st['dim'] + (205,), anchor='ma')
+sc.text((p.cx, 2338), 'КАТАЛОГ ВЛИЯНИЯ · 10 ПОЗИЦИЙ', F('m', 18), p.st['dim'] + (225,), anchor='ma')
+sc.text((p.cx, 2380), 'баланс сохраняется между матчами', F('l', 17), p.st['dim'] + (205,), anchor='ma')
 save(p, sc, 'ch1/p38_shop.png')
 
 print(f'Глава 1: собрано панелей {len(OUT)}')

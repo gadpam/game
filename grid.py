@@ -5,7 +5,8 @@
 Визуальный язык Solo Leveling:
   · глубокое сапфирово-кобальтовое голографическое стекло (алое тревожное — для провала,
     изумрудно-бирюзовое — для выполнения) с внутренним свечением по кромке и тонким растром;
-  · строгая прямоугольная двойная рамка с фирменными ступенчатыми угловыми узлами SL;
+  · многоплановая глубина: смещённые задние стёкла, техносетка, частицы, энергетические каналы;
+  · фасеточная двойная рамка со ступенчатыми угловыми узлами, боковыми рёбрами и ценовыми чипами;
   · верхняя и нижняя световые проекционные планки шире окна + деликатные искры света;
   · фирменная плашка шапки «[ ! ]  С И С Т Е М А» в рамке и мягкое неоновое свечение заголовков/цифр;
   · шрифт строго Exo 2 (Light / Medium / Bold), стрелки и ромбы — векторной графикой,
@@ -182,6 +183,126 @@ def subbox(p, x0, y0, x1, y1, alpha=92):
         sd.line([(cx, cy + dy * t), (cx, cy), (cx + dx * t, cy)], fill=st['hot'] + (205,), width=2)
     p.lay.alpha_composite(sb)
     p.d = ImageDraw.Draw(p.lay)
+
+
+def depth_bg(kind, box, h, w=800):
+    """Многослойное пространство: задние стёкла, техносетка, частицы и лучи глубины."""
+    base = void_bg(kind, box, w=w, h=h).convert('RGBA')
+    st = STATE[kind]
+    x0, y0, x1, y1 = box
+
+    # Матовая тактическая сетка остаётся почти невидимой, пока её не ловит свечение.
+    grid = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(grid)
+    for x in range(24, w, 56):
+        gd.line([(x, 0), (x, h)], fill=st['inner'] + (11,), width=1)
+    for y in range(30, h, 56):
+        gd.line([(0, y), (w, y)], fill=st['inner'] + (8,), width=1)
+    base = Image.alpha_composite(base, grid)
+
+    # Два смещённых стекла за главным окном создают параллакс и перспективу.
+    rear = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rear)
+    plates = [
+        ([(x0 - 22, y0 + 42), (x1 - 34, y0 + 10),
+          (x1 + 4, y1 - 32), (x0 - 38, y1 + 8)], 18, 58),
+        ([(x0 + 30, y0 - 18), (x1 + 26, y0 + 24),
+          (x1 + 38, y1 + 16), (x0 + 4, y1 - 28)], 12, 42),
+    ]
+    for poly, fill_a, edge_a in plates:
+        rd.polygon(poly, fill=st['aura'] + (fill_a,))
+        rd.line(poly + [poly[0]], fill=st['edge'] + (edge_a,), width=2)
+    base = Image.alpha_composite(base, rear.filter(ImageFilter.GaussianBlur(1.3)))
+
+    # Наклонные энергетические каналы и узлы ломают плоскую фронтальность.
+    energy = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    ed = ImageDraw.Draw(energy)
+    conduits = [
+        ((18, int(h * 0.22)), (x0 - 8, int(h * 0.34))),
+        ((w - 18, int(h * 0.28)), (x1 + 8, int(h * 0.39))),
+        ((20, int(h * 0.77)), (x0 - 8, int(h * 0.66))),
+        ((w - 20, int(h * 0.72)), (x1 + 8, int(h * 0.61))),
+    ]
+    for a, b in conduits:
+        ed.line([a, b], fill=st['edge'] + (80,), width=1)
+        for px, py in (a, b):
+            ed.polygon([(px, py - 5), (px + 5, py), (px, py + 5), (px - 5, py)],
+                       fill=st['hot'] + (155,))
+    for i in range(28):
+        px = 18 + ((i * 83 + h // 7) % (w - 36))
+        py = 22 + ((i * 137 + h // 11) % (h - 44))
+        r = 1 + (i % 2)
+        ed.ellipse((px - r, py - r, px + r, py + r), fill=st['inner'] + (45 + (i % 3) * 18,))
+    base = Image.alpha_composite(base, energy.filter(ImageFilter.GaussianBlur(0.45)))
+    return base.convert('RGB')
+
+
+def decorate_panel(p):
+    """Боковые рёбра, глубинные фаски и плавающие узлы поверх основного стекла."""
+    st = p.st
+    z = Image.new('RGBA', (p.bw, p.bh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(z)
+    x0, y0, x1, y1 = p.box
+
+    # Полупрозрачные боковые «крылья» уходят от стекла в глубину.
+    d.polygon([(x0 + 10, y0 + 74), (x0 + 34, y0 + 48),
+               (x0 + 34, y1 - 48), (x0 + 10, y1 - 74)],
+              fill=st['aura'] + (24,), outline=st['inner'] + (62,))
+    d.polygon([(x1 - 10, y0 + 74), (x1 - 34, y0 + 48),
+               (x1 - 34, y1 - 48), (x1 - 10, y1 - 74)],
+              fill=st['aura'] + (18,), outline=st['inner'] + (52,))
+
+    # Наклонные блики делят стекло на планы, но не мешают чтению.
+    d.polygon([(x0 + 44, y0 + 18), (x0 + 150, y0 + 18),
+               (x0 + 88, y1 - 18), (x0 + 24, y1 - 18)], fill=st['edge'] + (10,))
+    d.polygon([(x1 - 92, y0 + 18), (x1 - 34, y0 + 18),
+               (x1 - 54, y1 - 18), (x1 - 138, y1 - 18)], fill=st['hot'] + (5,))
+
+    for frac in (0.24, 0.50, 0.76):
+        yy = int(y0 + (y1 - y0) * frac)
+        for xx, side in ((x0 + 18, 1), (x1 - 18, -1)):
+            d.line([(xx, yy - 18), (xx + side * 16, yy)], fill=st['edge'] + (92,), width=1)
+            d.line([(xx + side * 16, yy), (xx, yy + 18)], fill=st['edge'] + (92,), width=1)
+            d.ellipse((xx - 2, yy - 2, xx + 2, yy + 2), fill=st['hot'] + (190,))
+    p.lay.alpha_composite(z)
+    p.d = ImageDraw.Draw(p.lay)
+
+
+def holo_card(p, x0, y0, x1, y1, alpha=104, active=False):
+    """Объёмная фасеточная карточка вместо плоского прямоугольника."""
+    st = p.st
+    cut = 12
+    poly = [(x0 + cut, y0), (x1 - cut, y0), (x1, y0 + cut),
+            (x1, y1 - cut), (x1 - cut, y1), (x0 + cut, y1),
+            (x0, y1 - cut), (x0, y0 + cut)]
+
+    shadow = Image.new('RGBA', (p.bw, p.bh), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.polygon([(x + 8, y + 10) for x, y in poly], fill=(0, 0, 0, 118))
+    p.lay.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(9)))
+
+    glow = Image.new('RGBA', (p.bw, p.bh), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    gd.line(poly + [poly[0]], fill=st['edge'] + (170 if active else 95,), width=5 if active else 3)
+    p.lay.alpha_composite(glow.filter(ImageFilter.GaussianBlur(8)))
+
+    d = ImageDraw.Draw(p.lay)
+    fill_c = {'n': (3, 12, 31, alpha), 'g': (3, 19, 17, alpha),
+              'f': (22, 4, 8, alpha)}[p.kind]
+    d.polygon(poly, fill=fill_c)
+    d.line(poly + [poly[0]], fill=st['edge'] + (160 if active else 100,), width=2)
+    inner = [(x0 + 6 + cut, y0 + 6), (x1 - 6 - cut, y0 + 6),
+             (x1 - 6, y0 + 6 + cut), (x1 - 6, y1 - 6 - cut),
+             (x1 - 6 - cut, y1 - 6), (x0 + 6 + cut, y1 - 6),
+             (x0 + 6, y1 - 6 - cut), (x0 + 6, y0 + 6 + cut)]
+    d.line(inner + [inner[0]], fill=st['inner'] + (58,), width=1)
+    d.line([(x0 + 28, y0 + 1), (min(x1 - 28, x0 + 156), y0 + 1)],
+           fill=st['hot'] + (220,), width=2)
+    d.line([(x1 + 1, y0 + 34), (x1 + 1, y1 - 34)], fill=st['edge'] + (62,), width=3)
+    node_x, node_y = x0 + 15, (y0 + y1) // 2
+    d.polygon([(node_x, node_y - 5), (node_x + 5, node_y),
+               (node_x, node_y + 5), (node_x - 5, node_y)], fill=st['hot'] + (190,))
+    p.d = d
 
 
 def rank_crest(p, cx, y0, y1, w_half=82):
