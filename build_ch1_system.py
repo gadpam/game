@@ -1,4 +1,4 @@
-"""Панели Системы главы 1 после авторской правки v11.
+"""Панели Системы главы 1 после авторской правки v13.
 
 Только глава 1: квест на ПРИНЯТИЕ РЕШЕНИЙ 26 -> 28, при провале
 характеристика не меняется; после матча — профиль, объяснение ИВ и магазин.
@@ -108,13 +108,14 @@ def item_box(p, sc, y0, y1, kind, title, detail_lines, price, index):
     # Цена сидит на отдельном глубинном чипе, а не «плавает» в пустоте.
     chip = Image.new('RGBA', (p.bw, p.bh), (0, 0, 0, 0))
     cd = ImageDraw.Draw(chip)
-    cx0, cy0, cx1, cy1 = p.g['val'] - 142, y1 - 63, p.g['val'] + 8, y1 - 22
+    cx0, cy0, cx1, cy1 = p.g['val'] - 142, y1 - 70, p.g['val'] + 8, y1 - 22
     cd.polygon([(cx0 + 10, cy0), (cx1, cy0), (cx1, cy1 - 10),
                 (cx1 - 10, cy1), (cx0, cy1), (cx0, cy0 + 10)],
                fill=(34, 27, 5, 155), outline=YEL + (100,))
     p.lay.alpha_composite(chip)
     p.d = ImageDraw.Draw(p.lay)
-    sc.text((p.g['val'], y1 - 40), price, F('b', 24), YEL + (255,), anchor='ra', glow=YEL)
+    sc.text((cx1 - 12, (cy0 + cy1) // 2), price, F('b', 22), YEL + (255,),
+            anchor='rm', glow=YEL)
 
 
 # 14 · первый квест — одно условие, награда +2 к принятию решений
