@@ -402,6 +402,52 @@ def sfx(im, center, text, boxes, keepouts, tag='sfx', size=54, angle=-9.0, mode=
     im.alpha_composite(art, (x, y))
 
 
+def stadium_scoreboard(im, windows, values, colon_dots, size=58):
+    """Точные цифры на физическом табло стадиона (часть рисунка, не UI/штамп)."""
+    if len(windows) != 2 or len(values) != 2 or len(colon_dots) != 2:
+        raise ValueError('stadium_scoreboard: нужны два окна, два значения и две точки')
+    font = LF('ob', size)
+    ink = (246, 202, 84, 255)
+    edge = (100, 105, 97, 220)
+    d = ImageDraw.Draw(im)
+    glow = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+
+    for box, value in zip(windows, values):
+        check_glyphs(value, 'ob')
+        d.rounded_rectangle(box, radius=3, fill=(14, 17, 17, 235), outline=edge, width=2)
+        cx = (box[0] + box[2]) // 2
+        cy = (box[1] + box[3]) // 2 - 1
+        gd.text((cx, cy), value, font=font, fill=(255, 191, 54, 155),
+                anchor='mm', stroke_width=2, stroke_fill=(255, 191, 54, 85))
+
+    for x, y in colon_dots:
+        gd.ellipse((x - 8, y - 8, x + 8, y + 8), fill=(255, 191, 54, 155))
+
+    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(5)))
+    d = ImageDraw.Draw(im)
+    for box, value in zip(windows, values):
+        cx = (box[0] + box[2]) // 2
+        cy = (box[1] + box[3]) // 2 - 1
+        d.text((cx, cy), value, font=font, fill=ink, anchor='mm')
+    for x, y in colon_dots:
+        d.ellipse((x - 4, y - 4, x + 4, y + 4), fill=ink)
+
+
+def system_ui_label(im, center, text, size=20):
+    """Чистая кириллица на нарисованной голограмме без псевдотекста генератора."""
+    check_glyphs(text, 'em')
+    font = LF('em', size)
+    glow = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    gd.text(center, text, font=font, fill=(110, 230, 255, 230), anchor='mm',
+            stroke_width=2, stroke_fill=(40, 145, 215, 180))
+    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(7)))
+    d = ImageDraw.Draw(im)
+    d.text(center, text, font=font, fill=(235, 250, 255, 255), anchor='mm',
+           stroke_width=1, stroke_fill=(54, 142, 196, 230))
+
+
 # ══════════════════════════════════════════════════════════════════
 # КАРТА РЕПЛИК, КАРТОЧЕК СОПЕРНИКОВ И SFX ВНУТРИ КАДРОВ ГЛ. 1
 # ══════════════════════════════════════════════════════════════════
@@ -454,17 +500,23 @@ def apply_ch1_frame(num, im_rgb):
 
     elif num == '09':  # 30′ · 1:0 вратарь в отчаянном прыжке тянется за мячом в нижний угол
         keep = [('ворота и прыжок', (85, 455, 710, 880)), ('защитник', (470, 405, 798, 1370))]
-        stamp(im, (30, 32), '30′ · 1 : 0', boxes, keep, '09_st', size=32)
-        sfx(im, (182, 955), 'ВШХ!', boxes, keep, tag='09_sfx', size=54, angle=-9.0)
+        stadium_scoreboard(im, [(96, 299, 173, 365), (214, 299, 290, 365)],
+                           ('0', '0'), ((193, 322), (193, 345)), size=58)
+        stamp(im, (30, 32), '30′', boxes, keep, '09_st', size=32)
+        sfx(im, (182, 955), 'ВШХ!', boxes, keep, tag='09_net', size=54, angle=-9.0)
+        sfx(im, (300, 1160), 'ГОООЛ!', boxes, keep, tag='09_goal', size=72, angle=-5.0)
 
     elif num == '10':  # 58′ · 2:0 второй пропущенный гол под ливнем, наши выдохлись
         keep = [('левый_игрок', (25, 520, 225, 980)), ('соперники', (205, 535, 420, 815)),
                 ('ворота', (415, 515, 790, 725)), ('шатский', (510, 505, 785, 1215)),
                 ('мачта', (650, 70, 785, 515))]
-        stamp(im, (30, 32), '58′ · 2 : 0', boxes, keep, '10_st', size=32)
+        stadium_scoreboard(im, [(77, 286, 139, 367), (201, 286, 262, 367)],
+                           ('2', '0'), ((164, 315), (164, 340)), size=58)
+        stamp(im, (30, 32), '58′', boxes, keep, '10_st', size=32)
+        sfx(im, (485, 82), 'ГОООЛ!', boxes, keep, tag='10_goal', size=62, angle=-5.0)
         say(im, [
-            (412, 292, ['Не успеваем…', 'Совсем сели.']),
-        ], tail_to=(568, 498), boxes=boxes, keepouts=keep, tag='10_shat', size=31, bend=-0.12)
+            (470, 250, ['Не успеваем…', 'Совсем сели.']),
+        ], tail_to=(600, 500), boxes=boxes, keepouts=keep, tag='10_shat', size=31, bend=-0.12)
 
     elif num == '11':  # 71′ полузащитник Шатский почувствовал дискомфорт в задней поверхности бедра
         keep = [('скамейка_тренер', (10, 320, 345, 710)), ('шатский', (300, 340, 695, 1100))]
@@ -526,6 +578,12 @@ def apply_ch1_frame(num, im_rgb):
             (488, 182, ['Моемся быстро.', 'Через двадцать минут', 'выезжаем.']),
         ], tail_to=(432, 6), boxes=boxes, keepouts=keep, tag='21_coach',
             size=31, bend=-0.15, offpanel=True)
+
+    elif num == '24':  # после матча Ветров сам открывает профиль
+        system_ui_label(im, (526, 538), 'ПРОФИЛЬ', size=18)
+
+    elif num == '26':  # после профиля Ветров сам открывает магазин
+        system_ui_label(im, (184, 804), 'МАГАЗИН', size=19)
 
     return im.convert('RGB'), len(boxes)
 
@@ -642,7 +700,7 @@ def render_gutter(bg_top, bg_bot, items, pad_top=74, pad_bot=78, item_gap=44, mi
 
 
 # ══════════════════════════════════════════════════════════════════
-# ПАРТИТУРА ГЛАВЫ 1 (24 кадра: первый выезд, «Речник» и пара
+# ПАРТИТУРА ГЛАВЫ 1 (27 кадров: первый выезд, «Речник» и пара
 # Корнеев–Жук, пробуждение Системы ТОЛЬКО на 72′ в момент сильного
 # волнения, окна в стиле Solo Leveling, живая разговорная речь)
 # ══════════════════════════════════════════════════════════════════
@@ -706,8 +764,9 @@ CH1_SCORE = [
 
     ('ch1/n30_goal_rain.jpg', '09', 1380, 3, 'paper', dict(
         bg=(PAPER, PAPER), pad_top=84, pad_bot=86, item_gap=42, items=[
-            {'lines': ['Ну вот, доигрались.', 'Дали пробить вторым темпом —', 'по мокрой траве такой не вытащишь.'], 'pos': 'left', 'size': 34, 'w': 'em'},
-            {'lines': ['До свистка кое-как дотерпели,', 'ушли на перерыв при 0:1.'], 'pos': 'right', 'size': 34, 'w': 'el'},
+            {'lines': ['Ну вот, доигрались.', 'Сетка дёрнулась, за воротами вскочили,', 'а табло ещё секунду держало нули.'], 'pos': 'left', 'size': 34, 'w': 'em'},
+            {'kind': 'stamp', 'text': '1 : 0'},
+            {'lines': ['До свистка кое-как дотерпели.'], 'pos': 'right', 'size': 34, 'w': 'el'},
             {'kind': 'stamp', 'text': '2-Й ТАЙМ'},
             {'lines': ['В раздевалке тренер напихал за центр,', 'но после перерыва нас прижали', 'ещё сильнее.'], 'pos': 'center', 'size': 34, 'w': 'el'},
         ])),
@@ -739,7 +798,7 @@ CH1_SCORE = [
             {'lines': ['Шаг на поле — и прямо перед лицом', 'вспыхивает тонкая синяя щель.'], 'pos': 'center', 'size': 36, 'w': 'em'},
         ])),
 
-    ('ch1/p07_quest.png', '14', 900, 3, 'dark', dict(
+    ('ch1/p07_quest.png', '14', 920, 3, 'dark', dict(
         bg=(DARK, DARK), min_h=104, items=[])),
 
     ('ch1/a13_eyes_rain.jpg', '15', 1240, 2, 'dark', dict(
@@ -767,10 +826,10 @@ CH1_SCORE = [
             {'lines': ['Жук сразу ткнул носком,', 'а Корнеев оттёр корпусом.'], 'pos': 'center', 'size': 34, 'w': 'el'},
         ])),
 
-    ('ch1/p23_fail.png', '19', 616, 3, 'dark', dict(
+    ('ch1/p23_fail.png', '19', 700, 3, 'dark', dict(
         bg=(DARK, PAPER), pad_top=88, item_gap=42, items=[
-            {'lines': ['Пронесло — защитник успел вынести', 'за лицевую, третий не пустили.'], 'pos': 'center', 'size': 34, 'w': 'el'},
-            {'lines': ['А перед глазами красным:', 'двадцать пять. Сняли единицу.'], 'pos': 'center', 'size': 35, 'w': 'em'},
+            {'lines': ['Защитник подстраховал и выбил', 'за лицевую. Но потерю окно засчитало.'], 'pos': 'center', 'size': 34, 'w': 'el'},
+            {'lines': ['Награды нет.', '«Принятие решений» — двадцать шесть.', 'Хотя бы не отняли.'], 'pos': 'center', 'size': 35, 'w': 'em'},
             {'kind': 'fade', 'h': 160, 'pad_before': 58, 'pad_after': 0},
         ])),
 
@@ -798,13 +857,30 @@ CH1_SCORE = [
     ('ch1/k5_kitchen.jpg', '23', 1380, 3, 'dark', dict(
         bg=(DARK, DARK), pad_top=90, pad_bot=90, item_gap=44, items=[
             {'lines': ['В автобусе нацарапал всё по памяти.', 'Дома переписал начисто — вдруг утром', 'решу, что просто перенервничал.'], 'pos': 'center', 'size': 34, 'w': 'el'},
-            {'lines': ['Поднимаю глаза — а над столом', 'опять горит синяя рамка.'], 'pos': 'center', 'size': 36, 'w': 'em'},
+            {'lines': ['Поднимаю глаза — синяя рамка опять горит.', 'Если она всё это считала,', 'пусть покажет остальное.'], 'pos': 'center', 'size': 34, 'w': 'em'},
         ])),
 
-    ('ch1/p37_day.png', '24', 734, 3, 'dark', dict(
+    ('ch1/a24_profile_touch.jpg', '24', 1380, 3, 'dark', dict(
+        bg=(DARK, DARK), pad_top=88, pad_bot=88, item_gap=42, items=[
+            {'lines': ['Касаюсь «Профиля».', 'Круг под пальцем вспыхивает.', 'Стекло раскрывается сразу.'], 'pos': 'center', 'size': 35, 'w': 'em'},
+        ])),
+
+    ('ch1/p37_day.png', '25', 1500, 3, 'dark', dict(
         bg=(DARK, DARK), pad_top=94, pad_bot=82, item_gap=44, items=[
-            {'lines': ['Отбор — двадцать пять.', 'С этим понятно.'], 'pos': 'center', 'size': 35, 'w': 'el'},
-            {'lines': ['Но «ИВ» — шестьдесят восемь.', 'Откуда столько, если квест я завалил?'], 'pos': 'center', 'size': 37, 'w': 'em'},
+            {'lines': ['Все цифры на месте.', '«Принятие решений» — двадцать шесть.', 'За провал ничего не сняли.'], 'pos': 'center', 'size': 35, 'w': 'el'},
+            {'lines': ['ИВ — очки влияния за действия,', 'которые меняют матч. Их можно копить', 'и тратить. Внизу — «Магазин».'], 'pos': 'center', 'size': 35, 'w': 'em'},
+        ])),
+
+    ('ch1/a26_shop_touch.jpg', '26', 1380, 3, 'dark', dict(
+        bg=(DARK, DARK), pad_top=88, pad_bot=88, item_gap=42, items=[
+            {'lines': ['Нажимаю ещё раз.', 'Синяя рамка вытягивается вниз.'], 'pos': 'center', 'size': 35, 'w': 'em'},
+        ])),
+
+    ('ch1/p38_shop.png', '27', 2500, 3, 'dark', dict(
+        bg=(DARK, DARK), pad_top=94, pad_bot=90, item_gap=44, items=[
+            {'lines': ['Десять товаров.', 'Самый дешёвый — тысяча.', 'У меня шестьдесят восемь.'], 'pos': 'center', 'size': 35, 'w': 'em'},
+            {'lines': ['Финты. Постоянные атрибуты.', 'Усиления на один матч.', 'Посмотреть есть на что. Купить — нечего.'], 'pos': 'center', 'size': 34, 'w': 'el'},
+            {'lines': ['Закрываю окно.', 'Завтра спрошу у Луки. А сегодня — поспать.'], 'pos': 'center', 'size': 35, 'w': 'em'},
         ])),
 ]
 
@@ -840,5 +916,5 @@ if __name__ == '__main__':
                       min_h=CH1_OPENING_GUTTER.get('min_h', 130))
     n_mono = sum(sum(1 for it in g['items'] if it.get('kind', 'mono') not in ('space', 'fade'))
                  for *_, g in CH1_SCORE) + 2
-    print(f'гл. 1: вебтун-леттеринг v6 готов · {len(CH1_SCORE)} кадров · '
+    print(f'гл. 1: вебтун-леттеринг v10 готов · {len(CH1_SCORE)} кадров · '
           f'{total_b} внутрикадровых + {n_mono} межкадровых блоков · 0 пересечений')

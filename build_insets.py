@@ -178,7 +178,7 @@ def build_ch1_kitchen():
     persp_line('72′ — замена', 11, 'm', (370, 935), alpha=184)
     persp_line('88′ — потеря', 11, 'm', (376, 953), alpha=184)
     # Правая страница (отдельно вынесено число Системы)
-    persp_line('отбор: 25', 13, 'b', (536, 1004), alpha=212)
+    persp_line('решения: 26', 12, 'b', (520, 1004), alpha=212)
 
     im.save('ch1/k5_kitchen.jpg', quality=95)
     print('k5_kitchen готово', im.size)
