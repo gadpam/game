@@ -17,6 +17,7 @@ from build_ch3_v2_lettering import (
     MINUTE_STAMP,
     OPENING_STAMP,
     SUB_CALL,
+    VETROV_REPLY,
 )
 from build_ch3_v2_scroll import (
     OUT_SCROLL,
@@ -52,13 +53,13 @@ LEGACY_LOCKS = {
 
 EXPECTED_INNER_CHAIN = (
     ("Сегодня — с первых минут.",),
-    ("Шатского после бедра берегут.",),
+    ("Шатского после травмы берегут.",),
     ("В центре — я.",),
     ("Три.",),
     ("Не лезть.",),
     ("Ждать.",),
     ("Ровно час.",),
-    ("Все три — чисто.",),
+    ("Три чистых.",),
     ("Двадцать восемь.",),
 )
 
@@ -101,13 +102,30 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertEqual(OPENING_STAMP, "КУБОК · ДЕНЬ МАТЧА")
         self.assertEqual(MATCH_STAMP, "«ГОРЕЦ» — «ТОРПЕДО-2» · КУБОК")
         self.assertEqual(MINUTE_STAMP, "60′")
-        self.assertEqual(COACH_BRIEFING, ("Первый час — твой.", "Потом выйдет Мельник."))
-        self.assertEqual(SUB_CALL, ("ВЕТРОВ!", "МЕЛЬНИК МЕНЯЕТ!"))
+        self.assertEqual(COACH_BRIEFING, ("Первый час играешь.", "Потом выйдет Мельник."))
+        self.assertEqual(SUB_CALL, ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!"))
         self.assertEqual(
             COACH_AFTER,
             (("Замена была по плану.", "Не из-за тебя."),
-             ("Начал ждать момент.", "Вот это оставь.")),
+             ("Начал ждать момент.", "Так и играй.")),
         )
+
+        script = (ROOT / "docs/CH3_SCRIPT_CANDIDATE.md").read_text(encoding="utf-8").casefold()
+        exact_lines = [line for group in INNER_CHAIN for line in group]
+        exact_lines += list(COACH_BRIEFING + VETROV_REPLY + SUB_CALL)
+        exact_lines += [line for group in COACH_AFTER for line in group]
+        exact_lines += [OPENING_STAMP, MATCH_STAMP, MINUTE_STAMP]
+        for line in exact_lines:
+            with self.subTest(script_line=line):
+                self.assertIn(line.casefold(), script)
+        for obsolete in (
+            "Мельник меняет",
+            "Все три — чисто",
+            "Вот это оставь",
+            "После бедра",
+        ):
+            with self.subTest(obsolete=obsolete):
+                self.assertNotIn(obsolete.casefold(), script)
 
     def test_new_sources_do_not_restore_legacy_mechanics(self):
         source = "\n".join(
@@ -127,6 +145,10 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
             "60 МИНУТ · БЕЗ ЗАМЕНЫ",
             "НЕ БОЛЬШЕ ТРЁХ ПОТЕРЬ",
             "НАГРАДА ТОЛЬКО ПРИ ВЫПОЛНЕНИИ",
+            "МЕЛЬНИК МЕНЯЕТ",
+            "ВСЕ ТРИ — ЧИСТО",
+            "ВОТ ЭТО ОСТАВЬ",
+            "ПОСЛЕ БЕДРА",
             "ИВ 68",
         ):
             with self.subTest(forbidden=forbidden):
