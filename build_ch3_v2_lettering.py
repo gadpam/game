@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from build_ch3_v2_numbers import apply_vetrov_number
 from build_lettering import (
     DARK,
     PAPER,
@@ -48,7 +49,7 @@ COACH_AFTER = (
 
 
 def apply_ch3_v2_frame(num: str, image_rgb: Image.Image):
-    image = image_rgb.convert("RGBA")
+    image = apply_vetrov_number(num, image_rgb.convert("RGBA"))
     boxes = []
 
     if num == "01":

@@ -1,7 +1,8 @@
 """Точная кириллица физических врезок для кандидата Главы 3 v2.
 
 Legacy ``g03_lineup.jpg`` остаётся нетронутым. Новая заявка показывает
-реальные 18 мест: 11 в основе и 7 в запасе; Ветров выделен в старте.
+18 игроков: 11 в основе и 7 в запасе, с уникальными игровыми номерами;
+Ветров выделен в старте под каноническим номером 19.
 """
 from __future__ import annotations
 
@@ -9,6 +10,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+from ch3_roster import SQUAD_NUMBERS, STARTERS, SUBS, VETROV_NUMBER
 from grid import F
 
 
@@ -16,32 +18,6 @@ SRC = Path("ch3/g03_lineup_src.jpg")
 OUT = Path("ch3/v2_02_lineup.jpg")
 INK = (31, 42, 70)
 DIM = (92, 91, 88)
-
-STARTERS = (
-    "ГРОМОВ",
-    "САВЕЛЬЕВ",
-    "АНДРЕЕВ",
-    "КАРИМОВ",
-    "ЛЕВЧУК",
-    "ТКАЧЁВ",
-    "ВЕТРОВ",
-    "ГОНЧАР",
-    "НОВИК",
-    "МАРЧЕНКО",
-    "ДЕНИСОВ",
-)
-SUBS = (
-    "БОБРОВ",
-    "МЕЛЬНИК",
-    "КИСЕЛЁВ",
-    "ШАТСКИЙ",
-    "КОВАЛЁВ",
-    "РОМАНОВ",
-    "ЮРЧЕНКО",
-)
-assert len(STARTERS) == 11 and len(SUBS) == 7
-assert len(set(STARTERS + SUBS)) == 18
-assert "ВЕТРОВ" in STARTERS and "ШАТСКИЙ" in SUBS
 
 
 def _fit(text: str, weight: str, size: int, max_width: int):
@@ -83,19 +59,24 @@ def build() -> str:
     y = 388
     for name in STARTERS:
         active = name == "ВЕТРОВ"
+        fill = (22, 64, 86) if active else INK
         if active:
             draw.rounded_rectangle((left_x - 8, y - 5, left_x + 176, y + 24), radius=4, fill=(217, 229, 231))
             draw.rectangle((left_x - 8, y - 5, left_x - 3, y + 24), fill=(51, 122, 145))
-        _text(draw, (left_x, y), name, "b" if active else "m", 15,
-              fill=(22, 64, 86) if active else INK, max_width=172)
+        _text(draw, (left_x + 20, y), str(SQUAD_NUMBERS[name]), "b", 14,
+              fill=fill, max_width=24, anchor="ra")
+        _text(draw, (left_x + 31, y), name, "b" if active else "m", 15,
+              fill=fill, max_width=141)
         y += 32
 
     y = 388
     for name in SUBS:
-        _text(draw, (right_x, y), name, "m", 15, max_width=172)
+        _text(draw, (right_x + 20, y), str(SQUAD_NUMBERS[name]), "b", 14,
+              max_width=24, anchor="ra")
+        _text(draw, (right_x + 31, y), name, "m", 15, max_width=141)
         y += 39
 
-    _text(draw, (x0, 770), "ВЕТРОВ · ЦПЗ · ПЕРВЫЙ СТАРТ", "b", 13,
+    _text(draw, (x0, 770), f"{VETROV_NUMBER} · ВЕТРОВ · ЦПЗ · ПЕРВЫЙ СТАРТ", "b", 13,
           fill=(51, 91, 112), max_width=x1 - x0)
     draw.line([(x0, 800), (x1, 800)], fill=(140, 137, 128), width=1)
 

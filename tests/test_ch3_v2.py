@@ -12,7 +12,7 @@ from build_ch3_v2_batch import (
     frame_output,
 )
 from build_ch3_v2_bus import SRC as BUS_SRC, build as build_bus
-from build_ch3_v2_insets import STARTERS, SUBS
+from build_ch3_v2_numbers import BACK_PLACEMENTS, SHORTS_PLACEMENTS
 from build_ch3_v2_subbed import SRC as SUBBED_SRC, build as build_subbed
 from build_ch3_v2_lettering import (
     CH3_V2_SCORE,
@@ -37,6 +37,13 @@ from build_ch3_v2_system import (
     QUEST_RANK,
     TACKLE_AFTER,
     TACKLE_BEFORE,
+)
+from ch3_roster import (
+    SQUAD_NUMBERS,
+    STARTERS,
+    SUBS,
+    VETROV_FUTURE_NUMBER,
+    VETROV_NUMBER,
 )
 
 
@@ -68,6 +75,27 @@ EXPECTED_INNER_CHAIN = (
     ("Три чистых.",),
     ("Двадцать восемь.",),
 )
+
+EXPECTED_SQUAD_NUMBERS = {
+    "ГРОМОВ": 1,
+    "САВЕЛЬЕВ": 2,
+    "АНДРЕЕВ": 3,
+    "КАРИМОВ": 4,
+    "ЛЕВЧУК": 5,
+    "ТКАЧЁВ": 6,
+    "ВЕТРОВ": 19,
+    "ГОНЧАР": 7,
+    "НОВИК": 9,
+    "МАРЧЕНКО": 10,
+    "ДЕНИСОВ": 11,
+    "БОБРОВ": 12,
+    "МЕЛЬНИК": 14,
+    "КИСЕЛЁВ": 13,
+    "ШАТСКИЙ": 16,
+    "КОВАЛЁВ": 17,
+    "РОМАНОВ": 18,
+    "ЮРЧЕНКО": 21,
+}
 
 
 class ChapterThreeV2CandidateTests(unittest.TestCase):
@@ -126,6 +154,16 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertIn("ВЕТРОВ", STARTERS)
         self.assertIn("ШАТСКИЙ", SUBS)
         self.assertIn("МЕЛЬНИК", SUBS)
+        self.assertEqual(SQUAD_NUMBERS, EXPECTED_SQUAD_NUMBERS)
+        self.assertEqual(len(set(SQUAD_NUMBERS.values())), 18)
+        self.assertEqual(VETROV_NUMBER, 19)
+        self.assertEqual(VETROV_FUTURE_NUMBER, 8)
+        self.assertNotIn(VETROV_FUTURE_NUMBER, SQUAD_NUMBERS.values())
+        self.assertEqual(
+            set(SHORTS_PLACEMENTS),
+            {"03", "06", "07", "08", "09", "10", "11"},
+        )
+        self.assertEqual(set(BACK_PLACEMENTS), {"12"})
 
     def test_text_contract_is_concise_and_matches_script(self):
         self.assertEqual(INNER_CHAIN, EXPECTED_INNER_CHAIN)
@@ -161,7 +199,9 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         source = "\n".join(
             (ROOT / name).read_text(encoding="utf-8")
             for name in (
+                "ch3_roster.py",
                 "build_ch3_v2_insets.py",
+                "build_ch3_v2_numbers.py",
                 "build_ch3_v2_system.py",
                 "build_ch3_v2_subbed.py",
                 "build_ch3_v2_bus.py",
