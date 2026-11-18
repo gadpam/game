@@ -5,6 +5,12 @@ from tempfile import TemporaryDirectory
 
 from PIL import Image
 
+from build_ch3_v2_batch import (
+    MAX_BATCH_FRAMES,
+    batch_output,
+    build as build_batch,
+    frame_output,
+)
 from build_ch3_v2_bus import SRC as BUS_SRC, build as build_bus
 from build_ch3_v2_insets import STARTERS, SUBS
 from build_ch3_v2_subbed import SRC as SUBBED_SRC, build as build_subbed
@@ -88,6 +94,30 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         )
         self.assertEqual((paths[5], paths[6], paths[8]), tackle_paths)
         self.assertEqual(len({sha256(ROOT / path) for path in tackle_paths}), 3)
+
+    def test_first_review_batch_contains_exactly_ten_finalized_frames(self):
+        self.assertEqual(MAX_BATCH_FRAMES, 10)
+        with self.assertRaises(ValueError):
+            build_batch(1, 11)
+
+        output = ROOT / batch_output(1, 10)
+        self.assertTrue(output.is_file())
+        with Image.open(output) as image:
+            self.assertEqual(image.width, 800)
+            self.assertEqual(image.height, 15478)
+
+        hashes = set()
+        for index, (_, number, height, *_rest) in enumerate(CH3_V2_SCORE[:10], start=1):
+            self.assertEqual(number, f"{index:02d}")
+            path = ROOT / frame_output(number)
+            self.assertTrue(path.is_file())
+            with Image.open(path) as image:
+                self.assertEqual(image.size, (800, height))
+                self.assertEqual(image.mode, "RGB")
+            hashes.add(sha256(path))
+        self.assertEqual(len(hashes), 10)
+        self.assertTrue(all(not (ROOT / frame_output(f"{index:02d}")).exists()
+                            for index in range(11, 15)))
 
     def test_lineup_has_eighteen_unique_players_and_vetrov_starts(self):
         self.assertEqual(len(STARTERS), 11)
