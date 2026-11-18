@@ -14,7 +14,7 @@ from grid import F, Panel, decorate_panel, depth_bg, holo_card, num_change, rank
 
 OUT_DIR = Path("ch3")
 QUEST = OUT_DIR / "v2_05_quest.png"
-DONE = OUT_DIR / "v2_13_done.png"
+DONE = OUT_DIR / "v2_15_done.png"
 QUEST_RANK = "F−"
 TACKLE_BEFORE = 26
 TACKLE_AFTER = 28

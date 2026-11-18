@@ -1,15 +1,15 @@
-"""Номера формы Ветрова для versioned-сборки Главы 3.
+"""Игровые номера формы для versioned-сборки Главы 3.
 
 Реалистичная схема: крупный контрастный номер на спине и небольшой номер
-на передней части шорт. Номер на груди не добавляется. В текущей главе
-Ветров носит 19; желание получить номер 8 относится к будущей арке.
+на передней части шорт. Номер на груди не добавляется. Ветров носит 19;
+желание получить номер 8 относится к будущей арке.
 """
 from __future__ import annotations
 
 from PIL import Image, ImageDraw, ImageFilter
 
 from build_lettering import LF
-from ch3_roster import VETROV_NUMBER
+from ch3_roster import SQUAD_NUMBERS, VETROV_NUMBER
 
 
 # Координаты заданы после приведения кадров к финальной ширине 800 px.
@@ -21,12 +21,32 @@ SHORTS_PLACEMENTS = {
     "08": ((259, 703), 27, -7.0),
     "09": ((300, 754), 27, -9.0),
     "10": ((515, 992), 27, 1.0),
-    "11": ((220, 886), 25, -5.0),
+    "11": ((229, 978), 25, -5.0),
+    "12": ((238, 930), 25, -4.0),
 }
 
 BACK_PLACEMENTS = {
-    # Послематчевый разговор: Ветров стоит к читателю спиной на переднем плане.
-    "12": ((164, 704), 92, -5.0),
+    # После финального свистка Ветров уходит в раздевалку спиной к читателю.
+    "14": ((552, 764), 66, -1.0),
+    # В разговоре с тренером его спина занимает размытый передний план.
+    "17": ((154, 806), 72, -4.0),
+}
+
+# В кадре финального свистка два различимых партнёра получают номера из
+# канонической заявки: Савельев 2 и Новик 9.
+TEAMMATE_SHORTS_PLACEMENTS = {
+    "13": (
+        (SQUAD_NUMBERS["САВЕЛЬЕВ"], (170, 864), 22, -2.0),
+        (SQUAD_NUMBERS["НОВИК"], (638, 1038), 23, 1.0),
+    ),
+}
+
+# В коридоре впереди идут вышедший Мельник 14 и Гончар 7.
+TEAMMATE_BACK_PLACEMENTS = {
+    "14": (
+        (SQUAD_NUMBERS["МЕЛЬНИК"], (277, 695), 40, -1.0),
+        (SQUAD_NUMBERS["ГОНЧАР"], (381, 715), 28, 0.0),
+    ),
 }
 
 
@@ -70,33 +90,50 @@ def _place(image: Image.Image, art: Image.Image, center: tuple[int, int]) -> Non
     image.alpha_composite(art, (x, y))
 
 
-def apply_vetrov_number(frame_number: str, image_rgba: Image.Image) -> Image.Image:
-    """Возвращает RGBA-копию кадра с номером 19 на видимой части формы."""
+def _shorts_art(number: int, size: int, angle: float, blur: float = 0.18) -> Image.Image:
+    return _number_art(
+        str(number),
+        size,
+        angle,
+        fill=(232, 234, 230, 225),
+        stroke=(20, 24, 27, 210),
+        blur=blur,
+    )
+
+
+def _back_art(number: int, size: int, angle: float, blur: float = 0.55) -> Image.Image:
+    return _number_art(
+        str(number),
+        size,
+        angle,
+        fill=(24, 28, 32, 225),
+        stroke=(215, 218, 214, 145),
+        blur=blur,
+    )
+
+
+def apply_ch3_numbers(frame_number: str, image_rgba: Image.Image) -> Image.Image:
+    """Возвращает RGBA-копию кадра с номерами на видимых частях формы."""
     image = image_rgba.convert("RGBA").copy()
-    text = str(VETROV_NUMBER)
 
     if frame_number in SHORTS_PLACEMENTS:
         center, size, angle = SHORTS_PLACEMENTS[frame_number]
-        art = _number_art(
-            text,
-            size,
-            angle,
-            fill=(232, 234, 230, 225),
-            stroke=(20, 24, 27, 210),
-            blur=0.18,
-        )
-        _place(image, art, center)
+        _place(image, _shorts_art(VETROV_NUMBER, size, angle), center)
 
     if frame_number in BACK_PLACEMENTS:
         center, size, angle = BACK_PLACEMENTS[frame_number]
-        art = _number_art(
-            text,
-            size,
-            angle,
-            fill=(24, 28, 32, 225),
-            stroke=(215, 218, 214, 145),
-            blur=0.55,
-        )
-        _place(image, art, center)
+        blur = 0.9 if frame_number == "17" else 0.55
+        _place(image, _back_art(VETROV_NUMBER, size, angle, blur=blur), center)
+
+    for number, center, size, angle in TEAMMATE_SHORTS_PLACEMENTS.get(frame_number, ()):
+        _place(image, _shorts_art(number, size, angle, blur=0.3), center)
+
+    for number, center, size, angle in TEAMMATE_BACK_PLACEMENTS.get(frame_number, ()):
+        _place(image, _back_art(number, size, angle, blur=0.7), center)
 
     return image
+
+
+# Совместимость с уже опубликованным импортом первого пакета.
+def apply_vetrov_number(frame_number: str, image_rgba: Image.Image) -> Image.Image:
+    return apply_ch3_numbers(frame_number, image_rgba)

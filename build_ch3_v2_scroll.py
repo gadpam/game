@@ -14,6 +14,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from build_ch3_v2_bus import build as build_bus
+from build_ch3_v2_epilogue import build as build_epilogue
 from build_ch3_v2_insets import build as build_lineup
 from build_ch3_v2_lettering import (
     CH3_V2_SCORE,
@@ -153,13 +154,14 @@ def build(*, approved: bool = False):
     build_system_panels()
     build_subbed()
     build_bus()
+    build_epilogue()
     inside_count, gutter_text_count = build_lettered_previews()
 
     files = [path for path, *_ in CH3_V2_SCORE]
     numbers = [number for _, number, *_ in CH3_V2_SCORE]
-    if len(files) != 14 or len(files) != len(set(files)):
-        raise ValueError("гл. 3 v2: нужны ровно 14 уникальных кадров")
-    if numbers != [f"{index:02d}" for index in range(1, 15)]:
+    if len(files) != 20 or len(files) != len(set(files)):
+        raise ValueError("гл. 3 v2: нужны ровно 20 уникальных кадров")
+    if numbers != [f"{index:02d}" for index in range(1, 21)]:
         raise ValueError(f"гл. 3 v2: нарушена нумерация: {numbers}")
     if not all("/v2_" in path for path in files):
         raise ValueError("гл. 3 v2: финальная сборка принимает только versioned-пути")

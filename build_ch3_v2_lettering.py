@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from build_ch3_v2_numbers import apply_vetrov_number
+from build_ch3_v2_numbers import apply_ch3_numbers
 from build_lettering import (
     DARK,
     PAPER,
@@ -34,11 +34,13 @@ INNER_CHAIN = (
     ("Ровно час.",),
     ("Три чистых.",),
     ("Двадцать восемь.",),
+    ("Квест сработал.",),
 )
 
 OPENING_STAMP = "КУБОК · ДЕНЬ МАТЧА"
 MATCH_STAMP = "«ГОРЕЦ» — «ТОРПЕДО-2» · КУБОК"
 MINUTE_STAMP = "60′"
+FINAL_WHISTLE_SFX = "ФЬЮ-ИТЬ!"
 COACH_BRIEFING = ("Первый час играешь.", "Потом выйдет Мельник.")
 VETROV_REPLY = ("Понял.",)
 SUB_CALL = ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!")
@@ -49,7 +51,7 @@ COACH_AFTER = (
 
 
 def apply_ch3_v2_frame(num: str, image_rgb: Image.Image):
-    image = apply_vetrov_number(num, image_rgb.convert("RGBA"))
+    image = apply_ch3_numbers(num, image_rgb.convert("RGBA"))
     boxes = []
 
     if num == "01":
@@ -144,7 +146,24 @@ def apply_ch3_v2_frame(num: str, image_rgb: Image.Image):
             spikes=24,
         )
 
-    elif num == "12":
+    elif num == "13":
+        keepouts = [
+            ("судья", (378, 580, 530, 940)),
+            ("игрок слева", (100, 690, 250, 1010)),
+            ("игрок справа", (555, 745, 735, 1230)),
+        ]
+        sfx(
+            image,
+            (650, 350),
+            FINAL_WHISTLE_SFX,
+            boxes,
+            keepouts,
+            tag="13_whistle",
+            size=49,
+            angle=-5.0,
+        )
+
+    elif num == "17":
         keepouts = [
             ("ветров", (0, 300, 340, 1370)),
             ("тренер", (360, 250, 730, 1170)),
@@ -158,7 +177,7 @@ def apply_ch3_v2_frame(num: str, image_rgb: Image.Image):
             tail_to=(515, 358),
             boxes=boxes,
             keepouts=keepouts,
-            tag="12_coach",
+            tag="17_coach",
             size=23,
             bend=-0.08,
         )
@@ -214,15 +233,32 @@ CH3_V2_SCORE = [
         bg=(PAPER, PAPER), pad_top=82, pad_bot=88, items=[
             {"lines": INNER_CHAIN[7], "pos": "center", "size": 36, "w": "em"},
         ])),
-    ("ch3/v2_12_coach.jpg", "12", 1420, 3, "paper", dict(
+    ("ch3/v2_12_bench_detail.jpg", "12", 1320, 3, "paper", dict(
+        bg=(PAPER, PAPER), min_h=110, items=[])),
+    ("ch3/v2_13_final_whistle.jpg", "13", 1420, 3, "paper", dict(
+        bg=(PAPER, PAPER), min_h=110, items=[])),
+    ("ch3/v2_14_walk_off.jpg", "14", 1420, 3, "paper", dict(
         bg=(PAPER, DARK), pad_bot=0, items=[
             {"kind": "fade", "h": 180, "pad_before": 84, "pad_after": 0},
         ])),
-    ("ch3/v2_13_done.png", "13", 830, 3, "dark", dict(
-        bg=(DARK, DARK), pad_top=94, pad_bot=100, items=[
+    ("ch3/v2_15_done.png", "15", 830, 3, "dark", dict(
+        bg=(DARK, PAPER), pad_top=94, pad_bot=0, items=[
             {"lines": INNER_CHAIN[8], "pos": "center", "size": 38, "w": "em"},
+            {"kind": "fade", "h": 180, "pad_before": 72, "pad_after": 0},
         ])),
-    ("ch3/v2_14_bus.jpg", "14", 1420, 3, "dark", dict(
+    ("ch3/v2_16_result_reaction.jpg", "16", 1280, 3, "paper", dict(
+        bg=(PAPER, PAPER), pad_top=82, pad_bot=88, items=[
+            {"lines": INNER_CHAIN[9], "pos": "center", "size": 36, "w": "em"},
+        ])),
+    ("ch3/v2_17_coach.jpg", "17", 1420, 3, "paper", dict(
+        bg=(PAPER, PAPER), min_h=110, items=[])),
+    ("ch3/v2_18_empty.jpg", "18", 1420, 3, "paper", dict(
+        bg=(PAPER, DARK), pad_bot=0, items=[
+            {"kind": "fade", "h": 180, "pad_before": 84, "pad_after": 0},
+        ])),
+    ("ch3/v2_19_bus_window.jpg", "19", 1240, 3, "dark", dict(
+        bg=(DARK, DARK), min_h=120, items=[])),
+    ("ch3/v2_20_bus.jpg", "20", 1420, 3, "dark", dict(
         bg=(DARK, DARK), min_h=360, items=[])),
 ]
 

@@ -12,12 +12,24 @@ from build_ch3_v2_batch import (
     frame_output,
 )
 from build_ch3_v2_bus import SRC as BUS_SRC, build as build_bus
-from build_ch3_v2_numbers import BACK_PLACEMENTS, SHORTS_PLACEMENTS
+from build_ch3_v2_epilogue import (
+    BUS_WINDOW_OUT,
+    EMPTY_OUT,
+    REACTION_OUT,
+    build as build_epilogue,
+)
+from build_ch3_v2_numbers import (
+    BACK_PLACEMENTS,
+    SHORTS_PLACEMENTS,
+    TEAMMATE_BACK_PLACEMENTS,
+    TEAMMATE_SHORTS_PLACEMENTS,
+)
 from build_ch3_v2_subbed import SRC as SUBBED_SRC, build as build_subbed
 from build_ch3_v2_lettering import (
     CH3_V2_SCORE,
     COACH_AFTER,
     COACH_BRIEFING,
+    FINAL_WHISTLE_SFX,
     INNER_CHAIN,
     MATCH_STAMP,
     MINUTE_STAMP,
@@ -74,6 +86,7 @@ EXPECTED_INNER_CHAIN = (
     ("Ровно час.",),
     ("Три чистых.",),
     ("Двадцать восемь.",),
+    ("Квест сработал.",),
 )
 
 EXPECTED_SQUAD_NUMBERS = {
@@ -106,12 +119,12 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertEqual(GOAL, 3)
         self.assertEqual(TACKLE_AFTER - TACKLE_BEFORE, 2)
 
-    def test_fourteen_frame_candidate_is_complete_and_unique(self):
+    def test_twenty_frame_candidate_is_complete_and_unique(self):
         paths = [path for path, *_ in CH3_V2_SCORE]
         numbers = [number for _, number, *_ in CH3_V2_SCORE]
-        self.assertEqual(numbers, [f"{index:02d}" for index in range(1, 15)])
-        self.assertEqual(len(paths), 14)
-        self.assertEqual(len(set(paths)), 14)
+        self.assertEqual(numbers, [f"{index:02d}" for index in range(1, 21)])
+        self.assertEqual(len(paths), 20)
+        self.assertEqual(len(set(paths)), 20)
         self.assertTrue(all((ROOT / path).is_file() for path in paths))
         self.assertTrue(all("/v2_" in path for path in paths))
 
@@ -144,8 +157,32 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
                 self.assertEqual(image.mode, "RGB")
             hashes.add(sha256(path))
         self.assertEqual(len(hashes), 10)
-        self.assertTrue(all(not (ROOT / frame_output(f"{index:02d}")).exists()
-                            for index in range(11, 15)))
+
+    def test_second_review_batch_contains_exactly_ten_finalized_frames(self):
+        with self.assertRaises(ValueError):
+            build_batch(10, 20)
+
+        output = ROOT / batch_output(11, 20)
+        self.assertTrue(output.is_file())
+        with Image.open(output) as image:
+            self.assertEqual(image.size, (800, 15953))
+
+        hashes = set()
+        for index, (_, number, height, *_rest) in enumerate(
+            CH3_V2_SCORE[10:], start=11
+        ):
+            self.assertEqual(number, f"{index:02d}")
+            path = ROOT / frame_output(number)
+            self.assertTrue(path.is_file())
+            with Image.open(path) as image:
+                self.assertEqual(image.size, (800, height))
+                self.assertEqual(image.mode, "RGB")
+            hashes.add(sha256(path))
+        self.assertEqual(len(hashes), 10)
+        self.assertNotEqual(
+            sha256(ROOT / batch_output(1, 10)),
+            sha256(output),
+        )
 
     def test_lineup_has_eighteen_unique_players_and_vetrov_starts(self):
         self.assertEqual(len(STARTERS), 11)
@@ -161,15 +198,28 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertNotIn(VETROV_FUTURE_NUMBER, SQUAD_NUMBERS.values())
         self.assertEqual(
             set(SHORTS_PLACEMENTS),
-            {"03", "06", "07", "08", "09", "10", "11"},
+            {"03", "06", "07", "08", "09", "10", "11", "12"},
         )
-        self.assertEqual(set(BACK_PLACEMENTS), {"12"})
+        self.assertEqual(set(BACK_PLACEMENTS), {"14", "17"})
+        self.assertEqual(set(TEAMMATE_SHORTS_PLACEMENTS), {"13"})
+        self.assertEqual(set(TEAMMATE_BACK_PLACEMENTS), {"14"})
+        visible_numbers = {
+            number
+            for placements in (
+                TEAMMATE_SHORTS_PLACEMENTS,
+                TEAMMATE_BACK_PLACEMENTS,
+            )
+            for rows in placements.values()
+            for number, *_ in rows
+        }
+        self.assertEqual(visible_numbers, {2, 7, 9, 14})
 
     def test_text_contract_is_concise_and_matches_script(self):
         self.assertEqual(INNER_CHAIN, EXPECTED_INNER_CHAIN)
         self.assertEqual(OPENING_STAMP, "КУБОК · ДЕНЬ МАТЧА")
         self.assertEqual(MATCH_STAMP, "«ГОРЕЦ» — «ТОРПЕДО-2» · КУБОК")
         self.assertEqual(MINUTE_STAMP, "60′")
+        self.assertEqual(FINAL_WHISTLE_SFX, "ФЬЮ-ИТЬ!")
         self.assertEqual(COACH_BRIEFING, ("Первый час играешь.", "Потом выйдет Мельник."))
         self.assertEqual(SUB_CALL, ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!"))
         self.assertEqual(
@@ -182,7 +232,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         exact_lines = [line for group in INNER_CHAIN for line in group]
         exact_lines += list(COACH_BRIEFING + VETROV_REPLY + SUB_CALL)
         exact_lines += [line for group in COACH_AFTER for line in group]
-        exact_lines += [OPENING_STAMP, MATCH_STAMP, MINUTE_STAMP]
+        exact_lines += [OPENING_STAMP, MATCH_STAMP, MINUTE_STAMP, FINAL_WHISTLE_SFX]
         for line in exact_lines:
             with self.subTest(script_line=line):
                 self.assertIn(line.casefold(), script)
@@ -202,6 +252,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
                 "ch3_roster.py",
                 "build_ch3_v2_insets.py",
                 "build_ch3_v2_numbers.py",
+                "build_ch3_v2_epilogue.py",
                 "build_ch3_v2_system.py",
                 "build_ch3_v2_subbed.py",
                 "build_ch3_v2_bus.py",
@@ -245,11 +296,11 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
             sha256(ROOT / "ch3/g07_pitch.jpg"),
         )
         self.assertEqual(
-            sha256(ROOT / "ch3/v2_12_coach.jpg"),
+            sha256(ROOT / "ch3/v2_17_coach.jpg"),
             sha256(ROOT / "ch3/g21_coach.jpg"),
         )
 
-        bus = ROOT / "ch3/v2_14_bus.jpg"
+        bus = ROOT / "ch3/v2_20_bus.jpg"
         subbed = ROOT / "ch3/v2_10_subbed.jpg"
         self.assertNotEqual(sha256(bus), sha256(ROOT / BUS_SRC))
         self.assertNotEqual(sha256(subbed), sha256(ROOT / SUBBED_SRC))
@@ -260,6 +311,13 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
             build_subbed(ROOT / SUBBED_SRC, rebuilt_subbed)
             self.assertEqual(sha256(bus), sha256(rebuilt_bus))
             self.assertEqual(sha256(subbed), sha256(rebuilt_subbed))
+
+        epilogue_outputs = tuple(ROOT / path for path in (
+            REACTION_OUT, EMPTY_OUT, BUS_WINDOW_OUT
+        ))
+        before = tuple(sha256(path) for path in epilogue_outputs)
+        build_epilogue()
+        self.assertEqual(before, tuple(sha256(path) for path in epilogue_outputs))
 
     def test_full_scroll_is_intentionally_deferred(self):
         with self.assertRaises(PermissionError):

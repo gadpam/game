@@ -13,6 +13,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from build_ch3_v2_bus import build as build_bus
+from build_ch3_v2_epilogue import build as build_epilogue
 from build_ch3_v2_insets import build as build_lineup
 from build_ch3_v2_lettering import (
     CH3_V2_SCORE,
@@ -112,11 +113,13 @@ def _opening_for(score, start: int):
 def _refresh_dependencies(numbers: set[str]):
     if "02" in numbers:
         build_lineup()
-    if numbers & {"05", "13"}:
+    if numbers & {"05", "15"}:
         build_system_panels()
     if "10" in numbers:
         build_subbed()
-    if "14" in numbers:
+    if numbers & {"16", "18", "19"}:
+        build_epilogue()
+    if "20" in numbers:
         build_bus()
 
 
