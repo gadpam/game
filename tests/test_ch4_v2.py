@@ -16,6 +16,14 @@ from build_ch4_v2_lettering import (
     GOAL_MINUTE,
     SUB_MINUTE as LETTERING_SUB_MINUTE,
 )
+from build_ch4_v2_scroll import (
+    OUT_REVIEW_SCROLL,
+    OUT_REVIEW_SHEET,
+    OUT_SCROLL,
+    OUT_SHEET,
+    REVIEW_LABEL,
+    build as build_scroll,
+)
 from ch4_v2_contract import (
     AWAY_SCORE,
     AWAY_TEAM,
@@ -162,6 +170,24 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
                 self.assertEqual(image.mode, "RGB")
         self.assertFalse((ROOT / "CH4_V2_SCROLL_SL_full.jpg").exists())
         self.assertFalse((ROOT / "CH4_V2_SL_SHEET.jpg").exists())
+
+    def test_full_review_is_marked_and_separate_from_canonical_outputs(self):
+        with self.assertRaises(PermissionError):
+            build_scroll()
+        with self.assertRaises(ValueError):
+            build_scroll(approved=True, review=True)
+
+        self.assertEqual(REVIEW_LABEL, "ПРОВЕРОЧНАЯ СБОРКА · НЕ УТВЕРЖДЕНО")
+        expected_review = {
+            OUT_REVIEW_SCROLL: (800, 32018),
+            OUT_REVIEW_SHEET: (1908, 3048),
+        }
+        for relative, expected_size in expected_review.items():
+            with self.subTest(output=relative), Image.open(ROOT / relative) as image:
+                self.assertEqual(image.size, expected_size)
+                self.assertEqual(image.mode, "RGB")
+        self.assertFalse((ROOT / OUT_SCROLL).exists())
+        self.assertFalse((ROOT / OUT_SHEET).exists())
 
     def test_second_batch_sources_and_result_panel_are_byte_locked(self):
         for relative, expected_hash in SECOND_BATCH_SOURCE_HASHES.items():
