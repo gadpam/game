@@ -45,8 +45,12 @@ COACH_BRIEFING = ("Первый час играешь.", "Потом выйде�
 VETROV_REPLY = ("Понял.",)
 SUB_CALL = ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!")
 COACH_AFTER = (
-    ("Замена была по плану.", "Не из-за тебя."),
+    ("Замена была по плану.", "К твоей игре вопросов нет."),
     ("Начал ждать момент.", "Так и играй."),
+)
+COACH_AFTER_RENDER = (
+    ("Замена была по плану.", "К твоей игре", "вопросов нет."),
+    COACH_AFTER[1],
 )
 
 
@@ -171,8 +175,8 @@ def apply_ch3_v2_frame(num: str, image_rgb: Image.Image):
         say(
             image,
             [
-                (205, 128, list(COACH_AFTER[0])),
-                (590, 128, list(COACH_AFTER[1])),
+                (205, 128, list(COACH_AFTER_RENDER[0])),
+                (600, 128, list(COACH_AFTER_RENDER[1])),
             ],
             tail_to=(515, 358),
             boxes=boxes,
@@ -233,7 +237,7 @@ CH3_V2_SCORE = [
         bg=(PAPER, PAPER), pad_top=82, pad_bot=88, items=[
             {"lines": INNER_CHAIN[7], "pos": "center", "size": 36, "w": "em"},
         ])),
-    ("ch3/v2_12_bench_detail.jpg", "12", 1320, 3, "paper", dict(
+    ("ch3/v2_12_scoreboard.jpg", "12", 1320, 3, "paper", dict(
         bg=(PAPER, PAPER), min_h=110, items=[])),
     ("ch3/v2_13_final_whistle.jpg", "13", 1420, 3, "paper", dict(
         bg=(PAPER, PAPER), min_h=110, items=[])),

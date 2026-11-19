@@ -22,6 +22,7 @@ from build_ch3_v2_lettering import (
     apply_ch3_v2_frame,
     build_lettered_previews,
 )
+from build_ch3_v2_revisions import build as build_revisions
 from build_ch3_v2_subbed import build as build_subbed
 from build_ch3_v2_system import (
     DONE,
@@ -152,6 +153,7 @@ def build(*, approved: bool = False):
 
     build_lineup()
     build_system_panels()
+    build_revisions()
     build_subbed()
     build_bus()
     build_epilogue()

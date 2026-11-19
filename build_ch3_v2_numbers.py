@@ -22,7 +22,6 @@ SHORTS_PLACEMENTS = {
     "09": ((300, 754), 27, -9.0),
     "10": ((515, 992), 27, 1.0),
     "11": ((229, 978), 25, -5.0),
-    "12": ((238, 930), 25, -4.0),
 }
 
 BACK_PLACEMENTS = {
@@ -57,10 +56,12 @@ def _number_art(
     fill: tuple[int, int, int, int],
     stroke: tuple[int, int, int, int],
     blur: float = 0.0,
+    stroke_width: int = 1,
 ) -> Image.Image:
     ss = 4
     font = LF("ob", size * ss)
-    bbox = font.getbbox(text, stroke_width=ss)
+    scaled_stroke = stroke_width * ss
+    bbox = font.getbbox(text, stroke_width=scaled_stroke)
     pad = 8 * ss
     width = bbox[2] - bbox[0] + pad * 2
     height = bbox[3] - bbox[1] + pad * 2
@@ -71,7 +72,7 @@ def _number_art(
         text,
         font=font,
         fill=fill,
-        stroke_width=ss,
+        stroke_width=scaled_stroke,
         stroke_fill=stroke,
     )
     layer = layer.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
@@ -101,14 +102,17 @@ def _shorts_art(number: int, size: int, angle: float, blur: float = 0.18) -> Ima
     )
 
 
-def _back_art(number: int, size: int, angle: float, blur: float = 0.55) -> Image.Image:
+def _back_art(number: int, size: int, angle: float, blur: float = 0.72) -> Image.Image:
+    # Спинной номер печатается прямо на белой ткани: без светлой цифровой
+    # обводки, с умеренной прозрачностью и мягким краем под фактуру/фокус.
     return _number_art(
         str(number),
         size,
         angle,
-        fill=(24, 28, 32, 225),
-        stroke=(215, 218, 214, 145),
+        fill=(25, 29, 31, 184),
+        stroke=(25, 29, 31, 0),
         blur=blur,
+        stroke_width=0,
     )
 
 
@@ -122,7 +126,7 @@ def apply_ch3_numbers(frame_number: str, image_rgba: Image.Image) -> Image.Image
 
     if frame_number in BACK_PLACEMENTS:
         center, size, angle = BACK_PLACEMENTS[frame_number]
-        blur = 0.9 if frame_number == "17" else 0.55
+        blur = 1.45 if frame_number == "17" else 0.72
         _place(image, _back_art(VETROV_NUMBER, size, angle, blur=blur), center)
 
     for number, center, size, angle in TEAMMATE_SHORTS_PLACEMENTS.get(frame_number, ()):

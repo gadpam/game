@@ -16,6 +16,7 @@ from build_ch3_v2_epilogue import (
     BUS_WINDOW_OUT,
     EMPTY_OUT,
     REACTION_OUT,
+    REACTION_SRC,
     build as build_epilogue,
 )
 from build_ch3_v2_numbers import (
@@ -24,10 +25,24 @@ from build_ch3_v2_numbers import (
     TEAMMATE_BACK_PLACEMENTS,
     TEAMMATE_SHORTS_PLACEMENTS,
 )
+from build_ch3_v2_revisions import (
+    AWAY_SCORE,
+    AWAY_TEAM,
+    FINAL_SCORE,
+    HOME_SCORE,
+    HOME_TEAM,
+    SCOREBOARD_OUT,
+    SCORE_MINUTE,
+    TACKLE_OUT,
+    WHISTLE_OUT,
+    WHISTLE_SRC,
+    build as build_revisions,
+)
 from build_ch3_v2_subbed import SRC as SUBBED_SRC, build as build_subbed
 from build_ch3_v2_lettering import (
     CH3_V2_SCORE,
     COACH_AFTER,
+    COACH_AFTER_RENDER,
     COACH_BRIEFING,
     FINAL_WHISTLE_SFX,
     INNER_CHAIN,
@@ -198,7 +213,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertNotIn(VETROV_FUTURE_NUMBER, SQUAD_NUMBERS.values())
         self.assertEqual(
             set(SHORTS_PLACEMENTS),
-            {"03", "06", "07", "08", "09", "10", "11", "12"},
+            {"03", "06", "07", "08", "09", "10", "11"},
         )
         self.assertEqual(set(BACK_PLACEMENTS), {"14", "17"})
         self.assertEqual(set(TEAMMATE_SHORTS_PLACEMENTS), {"13"})
@@ -220,13 +235,22 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertEqual(MATCH_STAMP, "«ГОРЕЦ» — «ТОРПЕДО-2» · КУБОК")
         self.assertEqual(MINUTE_STAMP, "60′")
         self.assertEqual(FINAL_WHISTLE_SFX, "ФЬЮ-ИТЬ!")
+        self.assertEqual(
+            (HOME_TEAM, HOME_SCORE, AWAY_SCORE, AWAY_TEAM, SCORE_MINUTE, FINAL_SCORE),
+            ("ГОРЕЦ", 0, 1, "ТОРПЕДО-2", "89′", "ГОРЕЦ 0:1 ТОРПЕДО-2"),
+        )
         self.assertEqual(COACH_BRIEFING, ("Первый час играешь.", "Потом выйдет Мельник."))
         self.assertEqual(SUB_CALL, ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!"))
         self.assertEqual(
             COACH_AFTER,
-            (("Замена была по плану.", "Не из-за тебя."),
+            (("Замена была по плану.", "К твоей игре вопросов нет."),
              ("Начал ждать момент.", "Так и играй.")),
         )
+        self.assertEqual(
+            " ".join(COACH_AFTER_RENDER[0]),
+            "Замена была по плану. К твоей игре вопросов нет.",
+        )
+        self.assertEqual(COACH_AFTER_RENDER[1], COACH_AFTER[1])
 
         script = (ROOT / "docs/CH3_SCRIPT_CANDIDATE.md").read_text(encoding="utf-8").casefold()
         exact_lines = [line for group in INNER_CHAIN for line in group]
@@ -236,11 +260,13 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         for line in exact_lines:
             with self.subTest(script_line=line):
                 self.assertIn(line.casefold(), script)
+        self.assertIn(FINAL_SCORE.casefold(), script)
         for obsolete in (
             "Мельник меняет",
             "Все три — чисто",
             "Вот это оставь",
             "После бедра",
+            "Не из-за тебя",
         ):
             with self.subTest(obsolete=obsolete):
                 self.assertNotIn(obsolete.casefold(), script)
@@ -252,6 +278,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
                 "ch3_roster.py",
                 "build_ch3_v2_insets.py",
                 "build_ch3_v2_numbers.py",
+                "build_ch3_v2_revisions.py",
                 "build_ch3_v2_epilogue.py",
                 "build_ch3_v2_system.py",
                 "build_ch3_v2_subbed.py",
@@ -270,6 +297,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
             "ВСЕ ТРИ — ЧИСТО",
             "ВОТ ЭТО ОСТАВЬ",
             "ПОСЛЕ БЕДРА",
+            "НЕ ИЗ-ЗА ТЕБЯ",
             "ИВ 68",
         ):
             with self.subTest(forbidden=forbidden):
@@ -312,12 +340,25 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
             self.assertEqual(sha256(bus), sha256(rebuilt_bus))
             self.assertEqual(sha256(subbed), sha256(rebuilt_subbed))
 
+        revision_outputs = tuple(ROOT / path for path in (
+            TACKLE_OUT, SCOREBOARD_OUT, WHISTLE_OUT
+        ))
+        before = tuple(sha256(path) for path in revision_outputs)
+        build_revisions()
+        self.assertEqual(before, tuple(sha256(path) for path in revision_outputs))
+        self.assertNotEqual(sha256(ROOT / WHISTLE_SRC), sha256(ROOT / WHISTLE_OUT))
+        with Image.open(ROOT / SCOREBOARD_OUT) as scoreboard:
+            self.assertEqual(scoreboard.size, (800, 1320))
+        self.assertNotIn("ch3/v2_12_bench_detail.jpg", [path for path, *_ in CH3_V2_SCORE])
+
         epilogue_outputs = tuple(ROOT / path for path in (
             REACTION_OUT, EMPTY_OUT, BUS_WINDOW_OUT
         ))
         before = tuple(sha256(path) for path in epilogue_outputs)
         build_epilogue()
         self.assertEqual(before, tuple(sha256(path) for path in epilogue_outputs))
+        self.assertTrue(str(REACTION_SRC).startswith("ch3/v2_"))
+        self.assertFalse(str(REACTION_SRC).startswith("ch1/"))
 
     def test_full_scroll_is_intentionally_deferred(self):
         with self.assertRaises(PermissionError):

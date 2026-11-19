@@ -20,6 +20,7 @@ from build_ch3_v2_lettering import (
     OPENING_GUTTER,
     apply_ch3_v2_frame,
 )
+from build_ch3_v2_revisions import build as build_revisions
 from build_ch3_v2_subbed import build as build_subbed
 from build_ch3_v2_system import build as build_system_panels
 from build_lettering import DARK, PAPER, render_gutter
@@ -115,6 +116,8 @@ def _refresh_dependencies(numbers: set[str]):
         build_lineup()
     if numbers & {"05", "15"}:
         build_system_panels()
+    if numbers & {"07", "12", "13"}:
+        build_revisions()
     if "10" in numbers:
         build_subbed()
     if numbers & {"16", "18", "19"}:
