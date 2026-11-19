@@ -396,21 +396,21 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertTrue(str(REACTION_SRC).startswith("ch3/v2_"))
         self.assertFalse(str(REACTION_SRC).startswith("ch1/"))
 
-    def test_canonical_full_scroll_is_deferred_but_review_build_exists(self):
+    def test_explicit_review_and_author_approved_outputs_exist(self):
         with self.assertRaises(PermissionError):
             build_scroll()
         with self.assertRaises(ValueError):
             build_scroll(approved=True, review=True)
-        self.assertFalse((ROOT / OUT_SCROLL).exists())
-        self.assertFalse((ROOT / OUT_SHEET).exists())
 
         self.assertEqual(REVIEW_LABEL, "ПРОВЕРОЧНАЯ СБОРКА · НЕ УТВЕРЖДЕНО")
-        review_outputs = {
+        expected_outputs = {
             OUT_REVIEW_SCROLL: (800, 31004),
             OUT_REVIEW_SHEET: (1908, 2957),
+            OUT_SCROLL: (800, 30964),
+            OUT_SHEET: (1908, 2953),
         }
-        for relative, expected_size in review_outputs.items():
-            with self.subTest(review=relative), Image.open(ROOT / relative) as image:
+        for relative, expected_size in expected_outputs.items():
+            with self.subTest(output=relative), Image.open(ROOT / relative) as image:
                 self.assertEqual(image.size, expected_size)
                 self.assertEqual(image.mode, "RGB")
 
