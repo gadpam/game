@@ -1,4 +1,4 @@
-"""Изолированно собирает первую панель квеста Главы 4 v2."""
+"""Изолированно собирает панели квеста и результата Главы 4 v2."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,6 +11,7 @@ from grid import F, sp
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "ch4" / "v2_11_quest.png"
+RESULT_OUT = ROOT / "ch4" / "v2_17_result.png"
 W, H = 800, 1120
 
 
@@ -64,5 +65,49 @@ def build() -> Path:
     return OUT
 
 
+def build_result() -> Path:
+    image = Image.new("RGBA", (W, H), (3, 7, 15, 255))
+    glow = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    for box, color, width in (
+        ((50, 62, 750, 1058), (42, 213, 209, 95), 9),
+        ((70, 82, 730, 1038), (102, 238, 225, 70), 3),
+    ):
+        gd.rounded_rectangle(box, radius=28, outline=color, width=width)
+    image = Image.alpha_composite(image, glow.filter(ImageFilter.GaussianBlur(18)))
+
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle(
+        (62, 72, 738, 1048),
+        radius=25,
+        fill=(7, 17, 31, 246),
+        outline=(105, 229, 224, 235),
+        width=3,
+    )
+    draw.rounded_rectangle((82, 92, 718, 1028), radius=18, outline=(50, 132, 151, 180), width=2)
+    draw.line((126, 208, 674, 208), fill=(55, 141, 158, 195), width=2)
+    draw.line((126, 682, 674, 682), fill=(55, 141, 158, 195), width=2)
+
+    _text(draw, (400, 132), sp("СИСТЕМА", 3), "m", 23, (151, 226, 232), "ma")
+    _text(draw, (400, 260), "ВЫПОЛНЕНО", "b", 52, (112, 241, 219), "ma")
+    _text(draw, (400, 356), f"КВЕСТ · {QUEST_RANK}", "m", 27, (177, 216, 229), "ma")
+    _text(draw, (400, 476), f"{RECOVERY_GOAL} / {RECOVERY_GOAL}", "b", 96, (242, 250, 252), "ma")
+
+    _text(draw, (400, 752), "ПРИНЯТИЕ РЕШЕНИЙ", "b", 36, (240, 249, 252), "ma")
+    _text(draw, (310, 844), str(DECISION_BEFORE), "b", 62, (100, 221, 255), "ma")
+    _text(draw, (490, 844), str(DECISION_AFTER), "b", 62, (112, 241, 219), "ma")
+    draw.line((365, 884, 426, 884), fill=(105, 231, 234), width=7)
+    draw.polygon(((426, 871), (450, 884), (426, 897)), fill=(105, 231, 234))
+
+    RESULT_OUT.parent.mkdir(parents=True, exist_ok=True)
+    image.convert("RGB").save(RESULT_OUT)
+    print(
+        f"{RESULT_OUT.relative_to(ROOT)}: {W}x{H} · ВЫПОЛНЕНО · "
+        f"{RECOVERY_GOAL}/{RECOVERY_GOAL} · {DECISION_BEFORE}→{DECISION_AFTER}"
+    )
+    return RESULT_OUT
+
+
 if __name__ == "__main__":
     build()
+    build_result()

@@ -1,10 +1,11 @@
-"""Леттеринг и первая производственная партитура Главы 4 v2."""
+"""Леттеринг и производственная партитура Главы 4 v2."""
 from __future__ import annotations
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from build_ch4_v2_numbers import apply_ch4_numbers
 from build_lettering import DARK, PAPER, say, sfx, shout, stamp
+from grid import F
 
 
 W = 800
@@ -17,6 +18,29 @@ SUB_MINUTE = "65′"
 COACH_CALL = ("ВЕТРОВ!", "РАЗМИНАЙСЯ!")
 COACH_INSTRUCTION = ("Подбери за Шатским.", "И первый пас — проще.")
 VETROV_REPLY = ("Понял.",)
+FINAL_SCORE_STAMP = "«ВЕРЕСК» 1:0 «ТОРПЕДО-2»"
+COACH_ASSESSMENT = (
+    "Ветров нормально вошёл.",
+    "Не полез за мячом —",
+    "поэтому успел закрыть зону.",
+)
+
+
+def _protocol_phone(image: Image.Image) -> None:
+    """Наносит настоящую кириллицу только на пустой физический экран телефона."""
+    draw = ImageDraw.Draw(image)
+    screen = (292, 718, 514, 1170)
+    draw.rounded_rectangle(screen, radius=18, fill=(242, 246, 245, 255), outline=(30, 42, 48, 255), width=3)
+    draw.text((403, 748), "ПРОТОКОЛ МАТЧА", font=F("m", 16), fill=(75, 88, 93, 255), anchor="ma")
+    draw.line((316, 778, 490, 778), fill=(180, 190, 190, 255), width=2)
+    draw.text((403, 814), "ВЕРЕСК 1:0", font=F("b", 24), fill=(25, 31, 34, 255), anchor="ma")
+    draw.text((403, 846), "ТОРПЕДО-2", font=F("b", 22), fill=(25, 31, 34, 255), anchor="ma")
+    draw.line((316, 874, 490, 874), fill=(180, 190, 190, 255), width=2)
+    draw.text((403, 910), "ВЕТРОВ", font=F("b", 25), fill=(151, 31, 42, 255), anchor="ma")
+    draw.text((403, 946), "25 МИНУТ", font=F("m", 20), fill=(48, 57, 61, 255), anchor="ma")
+    draw.line((316, 974, 490, 974), fill=(180, 190, 190, 255), width=2)
+    draw.text((403, 1015), "ОТБОРЫ · 2", font=F("b", 21), fill=(25, 31, 34, 255), anchor="ma")
+    draw.text((403, 1063), "ОЦЕНКА · 6.6", font=F("b", 21), fill=(25, 31, 34, 255), anchor="ma")
 
 
 def apply_ch4_v2_frame(num: str, image_rgb: Image.Image):
@@ -90,6 +114,58 @@ def apply_ch4_v2_frame(num: str, image_rgb: Image.Image):
         ]
         stamp(image, (34, 32), SUB_MINUTE, boxes, keepouts, tag="10_minute", size=31)
 
+    elif num == "12":
+        keepouts = [
+            ("ветров", (155, 300, 610, 1240)),
+            ("соперник", (555, 390, 795, 1030)),
+            ("мяч", (515, 925, 720, 1165)),
+        ]
+        sfx(image, (660, 210), "ТК!", boxes, keepouts, tag="12_tk", size=52, angle=-8)
+
+    elif num == "13":
+        keepouts = [
+            ("ветров", (0, 300, 585, 1200)),
+            ("соперник", (450, 260, 795, 1160)),
+            ("мяч", (500, 930, 720, 1185)),
+        ]
+        shout(image, (155, 170), ["ЕСТЬ!"], boxes, keepouts, tag="13_yes", size=38, spikes=22)
+
+    elif num == "15":
+        keepouts = [
+            ("ветров", (145, 390, 590, 1190)),
+            ("мяч", (520, 780, 700, 1045)),
+        ]
+        sfx(image, (665, 215), "ТУК!", boxes, keepouts, tag="15_tuk", size=52, angle=-8)
+
+    elif num == "16":
+        keepouts = [
+            ("игроки", (0, 520, 800, 1220)),
+            ("судья", (360, 540, 515, 850)),
+        ]
+        stamp(image, (0, 30), FINAL_SCORE_STAMP, boxes, keepouts, tag="16_score", size=25, center_x=True)
+        sfx(image, (650, 330), "ФЬЮ-ИТЬ!", boxes, keepouts, tag="16_whistle", size=48, angle=-5)
+
+    elif num == "18":
+        keepouts = [
+            ("тренер", (0, 390, 465, 1290)),
+            ("пресс-атташе", (530, 390, 800, 1290)),
+            ("ветров", (440, 430, 620, 1110)),
+        ]
+        say(
+            image,
+            [(398, 185, list(COACH_ASSESSMENT))],
+            tail_to=(270, 455),
+            boxes=boxes,
+            keepouts=keepouts,
+            tag="18_coach",
+            size=25,
+            bend=-0.08,
+        )
+
+    elif num == "19":
+        _protocol_phone(image)
+        boxes.append(("19_protocol", (292, 718, 514, 1170)))
+
     return image.convert("RGB"), len(boxes)
 
 
@@ -143,5 +219,37 @@ CH4_V2_SCORE = [
             {"kind": "fade", "h": 180, "pad_before": 62, "pad_after": 0},
         ])),
     ("ch4/v2_11_quest.png", "11", 1120, 3, "dark", dict(
-        bg=(DARK, DARK), min_h=110, items=[])),
+        bg=(DARK, PAPER), pad_top=90, pad_bot=0, items=[
+            {"lines": ["Решения. Снова."], "pos": "center", "size": 37, "w": "em"},
+            {"kind": "fade", "h": 180, "pad_before": 66, "pad_after": 0},
+        ])),
+    ("ch4/v2_12_recovery_one_src.jpg", "12", 1320, 3, "paper", dict(
+        bg=(PAPER, PAPER), min_h=105, items=[])),
+    ("ch4/v2_13_recovery_two_src.jpg", "13", 1320, 3, "paper", dict(
+        bg=(PAPER, PAPER), min_h=105, items=[])),
+    ("ch4/v2_14_hold_zone_src.jpg", "14", 1370, 3, "paper", dict(
+        bg=(PAPER, PAPER), pad_top=88, pad_bot=92, items=[
+            {"lines": ["Не выдёргиваться."], "pos": "center", "size": 38, "w": "em"},
+        ])),
+    ("ch4/v2_15_recovery_three_src.jpg", "15", 1320, 3, "paper", dict(
+        bg=(PAPER, PAPER), min_h=105, items=[])),
+    ("ch4/v2_16_final_whistle_src.jpg", "16", 1320, 3, "paper", dict(
+        bg=(PAPER, DARK), pad_bot=0, items=[
+            {"kind": "fade", "h": 180, "pad_before": 72, "pad_after": 0},
+        ])),
+    ("ch4/v2_17_result.png", "17", 1120, 3, "dark", dict(
+        bg=(DARK, PAPER), pad_top=92, pad_bot=0, items=[
+            {"lines": ["Двадцать восемь."], "pos": "center", "size": 38, "w": "em"},
+            {"kind": "fade", "h": 180, "pad_before": 68, "pad_after": 0},
+        ])),
+    ("ch4/v2_18_coach_corridor_src.jpg", "18", 1320, 3, "paper", dict(
+        bg=(PAPER, DARK), pad_bot=0, items=[
+            {"kind": "fade", "h": 180, "pad_before": 82, "pad_after": 0},
+        ])),
+    ("ch4/v2_19_protocol_phone_src.jpg", "19", 1370, 3, "dark", dict(
+        bg=(DARK, DARK), pad_top=96, pad_bot=98, items=[
+            {"lines": ["Два."], "pos": "center", "size": 40, "w": "em"},
+        ])),
+    ("ch4/v2_20_night_bus_src.jpg", "20", 1370, 3, "dark", dict(
+        bg=(DARK, DARK), min_h=360, items=[])),
 ]

@@ -50,5 +50,14 @@ def apply_ch4_numbers(num: str, image_rgba: Image.Image) -> Image.Image:
     elif num == "10":
         _number(image, (int(w * 0.490), int(h * 0.525)), VETROV_NUMBER, size=max(36, int(w * 0.075)), angle=-1)
         _number(image, (int(w * 0.455), int(h * 0.660)), VETROV_NUMBER, size=max(20, int(w * 0.036)), angle=-3)
+    elif num == "12":
+        _number(image, (int(w * 0.465), int(h * 0.625)), VETROV_NUMBER, size=max(20, int(w * 0.034)), angle=-7)
+    elif num == "13":
+        _number(image, (int(w * 0.370), int(h * 0.620)), VETROV_NUMBER, size=max(20, int(w * 0.034)), angle=-5)
+    elif num == "14":
+        _number(image, (int(w * 0.490), int(h * 0.580)), VETROV_NUMBER, size=max(30, int(w * 0.055)), angle=0)
+        _number(image, (int(w * 0.460), int(h * 0.655)), VETROV_NUMBER, size=max(19, int(w * 0.032)), angle=-2)
+    elif num == "15":
+        _number(image, (int(w * 0.420), int(h * 0.620)), VETROV_NUMBER, size=max(20, int(w * 0.034)), angle=-6)
 
     return image

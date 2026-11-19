@@ -1,4 +1,4 @@
-"""Собирает первый проверочный пакет Главы 4 максимум по десять фреймов."""
+"""Собирает проверочные пакеты Главы 4 максимум по десять фреймов."""
 from __future__ import annotations
 
 import argparse
@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 
 from build_ch4_v2_lettering import CH4_V2_SCORE, OPENING_GUTTER, TITLE, apply_ch4_v2_frame
 from build_ch4_v2_lineup import build as build_lineup
-from build_ch4_v2_system import build as build_system
+from build_ch4_v2_system import build as build_system, build_result
 from build_lettering import DARK, PAPER, render_gutter
 from grid import F, cover, sp
 
@@ -77,17 +77,20 @@ def _opening_for(score, start: int):
 def _refresh_dependencies(numbers: set[str]) -> None:
     if "02" in numbers:
         build_lineup()
-    # Панель 11 подготавливается уже сейчас, но в пакет 01–10 не попадает.
-    if numbers & {"08", "09", "10"}:
+    if numbers & {"08", "09", "10", "11"}:
         build_system()
+    if "17" in numbers:
+        build_result()
 
 
 def build(start: int = 1, end: int = 10):
-    if start < 1 or end > 10 or start > end:
-        raise ValueError("пока разрешён только первый пакет в диапазоне 01–10")
+    if start < 1 or end > len(CH4_V2_SCORE) or start > end:
+        raise ValueError(f"недопустимый диапазон фреймов: {start}–{end}")
     count = end - start + 1
     if count > MAX_BATCH_FRAMES:
         raise ValueError(f"в одном пакете разрешено не больше {MAX_BATCH_FRAMES} фреймов; запрошено {count}")
+    if start <= 10 < end:
+        raise ValueError("пакет не может пересекать границу 01–10 / 11–20")
 
     score = CH4_V2_SCORE[start - 1 : end]
     numbers = [number for _, number, *_ in score]

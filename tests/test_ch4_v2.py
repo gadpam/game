@@ -10,7 +10,9 @@ from ch4_roster import STARTERS, SUBS, SQUAD_NUMBERS, VETROV_FUTURE_NUMBER
 from build_ch4_v2_lettering import (
     CALL_MINUTE,
     CH4_V2_SCORE,
+    COACH_ASSESSMENT,
     COACH_INSTRUCTION,
+    FINAL_SCORE_STAMP,
     GOAL_MINUTE,
     SUB_MINUTE as LETTERING_SUB_MINUTE,
 )
@@ -63,6 +65,20 @@ FIRST_BATCH_SOURCE_HASHES = {
 
 QUEST_PANEL = Path("ch4/v2_11_quest.png")
 QUEST_PANEL_HASH = "4c5bef3938ae04d0d4a6ab1f487e2338456c77e060db9bb67c6a699f8714d33b"
+
+SECOND_BATCH_SOURCE_HASHES = {
+    Path("ch4/v2_12_recovery_one_src.jpg"): "e8878de1e1f30a445b844f3517944af71bf42374ac3c2fa4af9f59a9fc4d4c74",
+    Path("ch4/v2_13_recovery_two_src.jpg"): "ade446fbd949f0a8d329c858102c99508e8b0877576da174855e806888525944",
+    Path("ch4/v2_14_hold_zone_src.jpg"): "31b794ad8005307bbc4956b5de90fb9711f0d29a9ea51aa13c59904f52e83768",
+    Path("ch4/v2_15_recovery_three_src.jpg"): "d84db6011e30d43504fcadac236199288ac48cee7b98b3d9660c234913963752",
+    Path("ch4/v2_16_final_whistle_src.jpg"): "8d9853396b90acb1bee1f282e784b37d07da293065af6288c3e1b78c3bb5f325",
+    Path("ch4/v2_18_coach_corridor_src.jpg"): "de8a7c0be805c3f158fefe3353b598d2b8aee63991a8da5121049a423614a002",
+    Path("ch4/v2_19_protocol_phone_src.jpg"): "4dd810a4a0d91a87120095b290a1066c17663a8485794508dece99dc458a01ae",
+    Path("ch4/v2_20_night_bus_src.jpg"): "2eeababb7780669c265ea0b3924a070574810b04f462bf114d411d5d8c6b928e",
+}
+
+RESULT_PANEL = Path("ch4/v2_17_result.png")
+RESULT_PANEL_HASH = "3e610b98db70d10df7edfdb56ddc0079ee24a4f27a74732925a9531fc37f1f38"
 
 
 class ChapterFourV2PlanningTests(unittest.TestCase):
@@ -127,6 +143,69 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
                 self.assertEqual(image.width, 800)
                 self.assertEqual(image.mode, "RGB")
 
+    def test_twenty_frame_candidate_and_second_batch_are_complete(self):
+        self.assertEqual(len(CH4_V2_SCORE), 20)
+        self.assertEqual([row[1] for row in CH4_V2_SCORE], [f"{i:02d}" for i in range(1, 21)])
+        self.assertEqual(len({row[0] for row in CH4_V2_SCORE}), 20)
+        self.assertTrue(all("/v2_" in row[0] for row in CH4_V2_SCORE))
+
+        second = ROOT / "CH4_V2_BATCH_11_20_SCROLL.jpg"
+        self.assertTrue(second.is_file())
+        with Image.open(second) as image:
+            self.assertEqual(image.size, (800, 15961))
+            self.assertEqual(image.mode, "RGB")
+        for index in range(11, 21):
+            path = ROOT / f"ch4/v2_lettered_{index:02d}.jpg"
+            self.assertTrue(path.is_file(), path)
+            with Image.open(path) as image:
+                self.assertEqual(image.width, 800)
+                self.assertEqual(image.mode, "RGB")
+        self.assertFalse((ROOT / "CH4_V2_SCROLL_SL_full.jpg").exists())
+        self.assertFalse((ROOT / "CH4_V2_SL_SHEET.jpg").exists())
+
+    def test_second_batch_sources_and_result_panel_are_byte_locked(self):
+        for relative, expected_hash in SECOND_BATCH_SOURCE_HASHES.items():
+            with self.subTest(source=relative):
+                path = ROOT / relative
+                self.assertTrue(path.is_file())
+                self.assertEqual(sha256(path), expected_hash)
+                with Image.open(path) as image:
+                    self.assertGreaterEqual(image.width, 768)
+                    self.assertGreaterEqual(image.height, 1200)
+                    self.assertEqual(image.mode, "RGB")
+        result = ROOT / RESULT_PANEL
+        self.assertEqual(sha256(result), RESULT_PANEL_HASH)
+        with Image.open(result) as image:
+            self.assertEqual(image.size, (800, 1120))
+            self.assertEqual(image.mode, "RGB")
+
+    def test_recovery_sequence_is_decision_then_result(self):
+        expected = (
+            "ch4/v2_11_quest.png",
+            "ch4/v2_12_recovery_one_src.jpg",
+            "ch4/v2_13_recovery_two_src.jpg",
+            "ch4/v2_14_hold_zone_src.jpg",
+            "ch4/v2_15_recovery_three_src.jpg",
+            "ch4/v2_16_final_whistle_src.jpg",
+            "ch4/v2_17_result.png",
+        )
+        self.assertEqual(tuple(row[0] for row in CH4_V2_SCORE[10:17]), expected)
+        self.assertEqual(CH4_V2_SCORE[13][-1]["items"][0]["lines"], ["Не выдёргиваться."])
+        self.assertEqual(CH4_V2_SCORE[16][-1]["items"][0]["lines"], ["Двадцать восемь."])
+
+    def test_system_result_and_official_protocol_are_separate(self):
+        self.assertEqual(FINAL_SCORE_STAMP, "«ВЕРЕСК» 1:0 «ТОРПЕДО-2»")
+        self.assertEqual(
+            COACH_ASSESSMENT,
+            ("Ветров нормально вошёл.", "Не полез за мячом —", "поэтому успел закрыть зону."),
+        )
+        system_code = (ROOT / "build_ch4_v2_system.py").read_text(encoding="utf-8")
+        lettering = (ROOT / "build_ch4_v2_lettering.py").read_text(encoding="utf-8")
+        for forbidden in ("ОТБОРЫ", "6.6", "25 МИНУТ"):
+            self.assertNotIn(forbidden, system_code)
+        for exact in ("ПРОТОКОЛ МАТЧА", "ВЕРЕСК 1:0", "ТОРПЕДО-2", "25 МИНУТ", "ОТБОРЫ · 2", "ОЦЕНКА · 6.6"):
+            self.assertIn(exact, lettering)
+
     def test_first_batch_sources_and_quest_panel_are_byte_locked(self):
         for relative, expected_hash in FIRST_BATCH_SOURCE_HASHES.items():
             with self.subTest(source=relative):
@@ -156,7 +235,15 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
             capture_output=True,
         )
         self.assertNotEqual(over.returncode, 0)
-        self.assertIn("01–10", over.stderr)
+        self.assertIn("не больше 10", over.stderr)
+        crossing = subprocess.run(
+            [sys.executable, "build_ch4_v2_batch.py", "--start", "5", "--end", "14"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+        self.assertNotEqual(crossing.returncode, 0)
+        self.assertIn("границу 01–10 / 11–20", crossing.stderr)
 
     def test_script_contains_exact_contract_and_production_guards(self):
         script = (ROOT / "docs/CH4_SCRIPT_CANDIDATE.md").read_text(encoding="utf-8")
@@ -173,6 +260,8 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
         ):
             with self.subTest(exact=exact):
                 self.assertIn(exact, script)
+        self.assertIn("### Кадр 11 · условие", script)
+        self.assertIn("### Кадр 17 · результат", script)
         self.assertIn("Никакого `F+`", script)
         self.assertIn("`ПОЗИЦИЯ 70 → 71`", script)
         self.assertNotIn("КВЕСТ · F+", script)
