@@ -45,10 +45,10 @@ def apply_ch4_numbers(num: str, image_rgba: Image.Image) -> Image.Image:
     # Только ракурсы, где поверхность формы действительно видна. Никаких
     # ложных номеров на груди/рукавах или дальних пиксельных игроках.
     if num == "04":
-        _number(image, (int(w * 0.392), int(h * 0.415)), VETROV_NUMBER, size=max(28, int(w * 0.048)), angle=-2)
-        _number(image, (int(w * 0.732), int(h * 0.386)), SHATSKY_NUMBER, size=max(24, int(w * 0.041)), angle=4)
+        _number(image, (int(w * 0.310), int(h * 0.530)), VETROV_NUMBER, size=max(28, int(w * 0.048)), angle=-8)
+        _number(image, (int(w * 0.795), int(h * 0.405)), SHATSKY_NUMBER, size=max(24, int(w * 0.041)), angle=4)
     elif num == "10":
-        _number(image, (int(w * 0.385), int(h * 0.425)), VETROV_NUMBER, size=max(36, int(w * 0.075)), angle=-3)
-        _number(image, (int(w * 0.365), int(h * 0.685)), VETROV_NUMBER, size=max(20, int(w * 0.036)), angle=-5)
+        _number(image, (int(w * 0.490), int(h * 0.525)), VETROV_NUMBER, size=max(36, int(w * 0.075)), angle=-1)
+        _number(image, (int(w * 0.455), int(h * 0.660)), VETROV_NUMBER, size=max(20, int(w * 0.036)), angle=-3)
 
     return image

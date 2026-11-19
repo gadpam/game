@@ -58,10 +58,11 @@ FIRST_BATCH_SOURCE_HASHES = {
     Path("ch4/v2_07_halftime_corridor_src.jpg"): "91d2687d46e5f621385813c5716a2811d04ee0ad769fd5cd9918ed8ca9cfb1cb",
     Path("ch4/v2_08_coach_calls_62_src.jpg"): "21acb1593b587b281c911f0eef41d42d13718acf50b9cf333bdefbd6fa7a3d12",
     Path("ch4/v2_09_touchline_instruction_src.jpg"): "cd56753fa444d106e8fdb7adc7285e6b905482eecf916651944a568eeebbd61b",
+    Path("ch4/v2_10_substitution_65_src.jpg"): "61068917eda283e26653253865dbd0ef97eeca656c38fadd19950929dcf4e42e",
 }
 
 QUEST_PANEL = Path("ch4/v2_11_quest.png")
-QUEST_PANEL_HASH = "dcab6a73a275d8baf58c224c1af5753a0dc00834fe58c9841a1f9d6b02c8f6b3"
+QUEST_PANEL_HASH = "4c5bef3938ae04d0d4a6ab1f487e2338456c77e060db9bb67c6a699f8714d33b"
 
 
 class ChapterFourV2PlanningTests(unittest.TestCase):
@@ -107,20 +108,19 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
         self.assertNotEqual(VERESK_KIT["shirt"], "#000000")
         self.assertNotEqual(VERESK_KIT["shorts"], "#000000")
 
-    def test_first_review_batch_has_nine_ready_frames_and_waits_for_substitution_art(self):
-        first_nine = CH4_V2_SCORE[:9]
-        self.assertEqual([row[1] for row in first_nine], [f"{i:02d}" for i in range(1, 10)])
-        self.assertEqual(len({row[0] for row in first_nine}), 9)
-        self.assertTrue(all("/v2_" in row[0] for row in first_nine))
+    def test_first_review_batch_contains_exactly_ten_ready_frames(self):
+        first_ten = CH4_V2_SCORE[:10]
+        self.assertEqual([row[1] for row in first_ten], [f"{i:02d}" for i in range(1, 11)])
+        self.assertEqual(len({row[0] for row in first_ten}), 10)
+        self.assertTrue(all("/v2_" in row[0] for row in first_ten))
         self.assertEqual(CH4_V2_SCORE[9][0], "ch4/v2_10_substitution_65_src.jpg")
-        self.assertFalse((ROOT / CH4_V2_SCORE[9][0]).exists())
-        self.assertFalse((ROOT / "CH4_V2_BATCH_01_10_SCROLL.jpg").exists())
-        partial = ROOT / "CH4_V2_BATCH_01_09_SCROLL.jpg"
-        self.assertTrue(partial.is_file())
-        with Image.open(partial) as image:
-            self.assertEqual(image.size, (800, 14873))
+        self.assertTrue((ROOT / CH4_V2_SCORE[9][0]).is_file())
+        full = ROOT / "CH4_V2_BATCH_01_10_SCROLL.jpg"
+        self.assertTrue(full.is_file())
+        with Image.open(full) as image:
+            self.assertEqual(image.size, (800, 16597))
             self.assertEqual(image.mode, "RGB")
-        for index in range(1, 10):
+        for index in range(1, 11):
             path = ROOT / f"ch4/v2_lettered_{index:02d}.jpg"
             self.assertTrue(path.is_file(), path)
             with Image.open(path) as image:
@@ -148,7 +148,7 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
         for forbidden in ("68′", "F+", "ПОЗИЦИЯ 70 → 71"):
             self.assertNotIn(forbidden, lettering)
 
-    def test_batch_builder_rejects_more_than_ten_or_missing_tenth_frame(self):
+    def test_batch_builder_rejects_more_than_ten_frames(self):
         over = subprocess.run(
             [sys.executable, "build_ch4_v2_batch.py", "--start", "1", "--end", "11"],
             cwd=ROOT,
@@ -156,14 +156,7 @@ class ChapterFourV2PlanningTests(unittest.TestCase):
             capture_output=True,
         )
         self.assertNotEqual(over.returncode, 0)
-        missing = subprocess.run(
-            [sys.executable, "build_ch4_v2_batch.py", "--start", "1", "--end", "10"],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-        )
-        self.assertNotEqual(missing.returncode, 0)
-        self.assertIn("v2_10_substitution_65_src.jpg", missing.stderr)
+        self.assertIn("01–10", over.stderr)
 
     def test_script_contains_exact_contract_and_production_guards(self):
         script = (ROOT / "docs/CH4_SCRIPT_CANDIDATE.md").read_text(encoding="utf-8")

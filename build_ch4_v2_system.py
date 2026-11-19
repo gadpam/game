@@ -52,7 +52,10 @@ def build() -> Path:
 
     _text(draw, (400, 770), "НАГРАДА", "m", 21, (116, 166, 195), "ma")
     _text(draw, (400, 828), "ПРИНЯТИЕ РЕШЕНИЙ", "b", 34, (240, 249, 252), "ma")
-    _text(draw, (400, 899), f"{DECISION_BEFORE}  ДО  {DECISION_AFTER}", "b", 47, (100, 221, 255), "ma")
+    _text(draw, (310, 899), str(DECISION_BEFORE), "b", 56, (100, 221, 255), "ma")
+    _text(draw, (490, 899), str(DECISION_AFTER), "b", 56, (100, 221, 255), "ma")
+    draw.line((365, 936, 426, 936), fill=(100, 221, 255), width=7)
+    draw.polygon(((426, 923), (450, 936), (426, 949)), fill=(100, 221, 255))
     _text(draw, (400, 980), "БЕЗ АВТОМАТИЧЕСКОГО ПОВЫШЕНИЯ РАНГА", "m", 18, (111, 157, 181), "ma")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
