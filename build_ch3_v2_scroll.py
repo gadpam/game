@@ -1,9 +1,10 @@
-"""Финальная изолированная сборка Главы 3 v2 — только после утверждения.
+"""Полная изолированная сборка Главы 3 v2.
 
-Модуль безопасно импортируется и не создаёт ленту сам. Полный скролл и
-монтажный лист можно собрать ровно один раз явной командой
-``python build_ch3_v2_scroll.py --approved`` после авторского утверждения
-текста и кода. Legacy ``CH3_*`` не перезаписываются.
+По прямому запросу автора ``--review`` создаёт полную проверочную ленту и
+монтажный лист с явной маркировкой «НЕ УТВЕРЖДЕНО». Канонические пути
+``CH3_V2_SCROLL_SL_full.jpg`` / ``CH3_V2_SL_SHEET.jpg`` остаются доступны
+только через ``--approved`` после отдельного утверждения главы. Legacy
+``CH3_*`` не перезаписываются.
 """
 from __future__ import annotations
 
@@ -40,8 +41,11 @@ from grid import F, cover, sp
 W = 800
 OUT_SCROLL = Path("CH3_V2_SCROLL_SL_full.jpg")
 OUT_SHEET = Path("CH3_V2_SL_SHEET.jpg")
+OUT_REVIEW_SCROLL = Path("CH3_V2_REVIEW_SCROLL_full.jpg")
+OUT_REVIEW_SHEET = Path("CH3_V2_REVIEW_SHEET.jpg")
 TITLE = "ИЗ УВАЖЕНИЯ К ТАЙМИНГУ"
 SUBTITLE = "ТОМ 1 · ГЛАВА 3 · ПРОИЗВОДСТВЕННАЯ ВЕРСИЯ V2"
+REVIEW_LABEL = "ПРОВЕРОЧНАЯ СБОРКА · НЕ УТВЕРЖДЕНО"
 
 
 def stat(image: Image.Image):
@@ -52,7 +56,7 @@ def stat(image: Image.Image):
     return float(array.mean()), float((array.max(2) - array.min(2)).mean())
 
 
-def _draw_header(draw: ImageDraw.ImageDraw):
+def _draw_header(draw: ImageDraw.ImageDraw, *, review: bool):
     draw.text(
         (W // 2, 84), sp("ГЛАВА 3", 3), font=F("m", 24),
         fill=(150, 178, 202), anchor="ma",
@@ -66,12 +70,18 @@ def _draw_header(draw: ImageDraw.ImageDraw):
         (W // 2, 244), "ТОМ 1 · «ПОКА ПОВРЕМЕНИМ»", font=F("l", 19),
         fill=(128, 154, 176), anchor="ma",
     )
+    if review:
+        draw.text(
+            (W // 2, 292), REVIEW_LABEL, font=F("m", 17),
+            fill=(218, 178, 116), anchor="ma",
+        )
 
 
-def _draw_footer(draw: ImageDraw.ImageDraw, y: int):
+def _draw_footer(draw: ImageDraw.ImageDraw, y: int, *, review: bool):
     draw.line([(80, y), (720, y)], fill=(78, 108, 138), width=1)
+    label = "КОНЕЦ ПРОВЕРОЧНОЙ СБОРКИ" if review else "ГЛАВА 3 КОНЧЕНА"
     draw.text(
-        (W // 2, y + 42), sp("ГЛАВА 3 КОНЧЕНА", 2), font=F("b", 27),
+        (W // 2, y + 42), sp(label, 2), font=F("b", 27),
         fill=(240, 246, 252), anchor="ma",
     )
 
@@ -86,7 +96,15 @@ def _gutter(spec):
     )
 
 
-def _contact_sheet(scroll: Image.Image, total_h: int, frame_count: int):
+def _contact_sheet(
+    scroll: Image.Image,
+    total_h: int,
+    frame_count: int,
+    *,
+    scroll_out: Path,
+    sheet_out: Path,
+    review: bool,
+):
     cols = 5
     col_w = 360
     scale = col_w / W
@@ -104,9 +122,10 @@ def _contact_sheet(scroll: Image.Image, total_h: int, frame_count: int):
         f"ГЛАВА 3 · «{TITLE}» · v2 ({frame_count} кадров, чтение по колонкам 1–{cols})",
         font=F("b", 22), fill=(22, 26, 32),
     )
+    sheet_subtitle = f"{SUBTITLE} · {REVIEW_LABEL}" if review else SUBTITLE
     draw.text(
         (pad, 60),
-        f"{SUBTITLE}  ·  полный размер: {OUT_SCROLL.name} ({W}×{total_h})",
+        f"{sheet_subtitle}  ·  полный размер: {scroll_out.name} ({W}×{total_h})",
         font=F("l", 14), fill=(96, 102, 110),
     )
     for column in range(cols):
@@ -125,11 +144,12 @@ def _contact_sheet(scroll: Image.Image, total_h: int, frame_count: int):
             f"полоса {column + 1} / {cols}",
             font=F("m", 13), fill=(62, 68, 76), anchor="ma",
         )
-    sheet.save(OUT_SHEET, quality=93, optimize=True, progressive=True)
+    sheet.save(sheet_out, quality=93, optimize=True, progressive=True)
 
 
-def _qc_strips(scroll: Image.Image):
-    out_dir = Path("_backup/ch3_v2_strips")
+def _qc_strips(scroll: Image.Image, *, review: bool):
+    name = "ch3_v2_review_strips" if review else "ch3_v2_strips"
+    out_dir = Path("_backup") / name
     out_dir.mkdir(parents=True, exist_ok=True)
     for old in out_dir.glob("*.jpg"):
         old.unlink()
@@ -144,12 +164,18 @@ def _qc_strips(scroll: Image.Image):
         )
 
 
-def build(*, approved: bool = False):
-    if not approved:
+def build(*, approved: bool = False, review: bool = False):
+    if approved and review:
+        raise ValueError("режимы --review и --approved взаимоисключающие")
+    if not approved and not review:
         raise PermissionError(
-            "Глава 3 ещё не утверждена: финальная лента собирается только "
-            "с явным флагом --approved после решения автора"
+            "Нужен явный режим: --review для полной проверочной сборки или "
+            "--approved для канонической финализации после утверждения"
         )
+
+    is_review = review
+    scroll_out = OUT_REVIEW_SCROLL if is_review else OUT_SCROLL
+    sheet_out = OUT_REVIEW_SHEET if is_review else OUT_SHEET
 
     build_lineup()
     build_system_panels()
@@ -194,7 +220,7 @@ def build(*, approved: bool = False):
 
     opening = _gutter(OPENING_GUTTER)
     gutters = [_gutter(spec) for *_, spec in CH3_V2_SCORE]
-    top_h = 310
+    top_h = 350 if is_review else 310
     bottom_h = 190
     total_h = (
         top_h
@@ -206,7 +232,7 @@ def build(*, approved: bool = False):
 
     scroll = Image.new("RGB", (W, total_h), DARK)
     draw = ImageDraw.Draw(scroll)
-    _draw_header(draw)
+    _draw_header(draw, review=is_review)
     y = top_h
     scroll.paste(opening, (0, y))
     y += opening.height
@@ -216,10 +242,17 @@ def build(*, approved: bool = False):
         scroll.paste(gutter, (0, y))
         y += gutter.height
 
-    _draw_footer(draw, y + 36)
-    scroll.save(OUT_SCROLL, quality=92, optimize=True, progressive=True)
-    _contact_sheet(scroll, total_h, len(images))
-    _qc_strips(scroll)
+    _draw_footer(draw, y + 36, review=is_review)
+    scroll.save(scroll_out, quality=92, optimize=True, progressive=True)
+    _contact_sheet(
+        scroll,
+        total_h,
+        len(images),
+        scroll_out=scroll_out,
+        sheet_out=sheet_out,
+        review=is_review,
+    )
+    _qc_strips(scroll, review=is_review)
 
     median_sat = float(np.median(art_saturation))
     mean_sat = float(np.mean(art_saturation))
@@ -231,7 +264,9 @@ def build(*, approved: bool = False):
         f"скролл {W}×{total_h} · насыщ. clean art: "
         f"медиана {median_sat:.1f}, среднее {mean_sat:.1f}"
     )
-    print(f"{OUT_SCROLL} + {OUT_SHEET}")
+    mode_label = "проверочная полная сборка" if is_review else "утверждённая финализация"
+    print(f"режим: {mode_label}")
+    print(f"{scroll_out} + {sheet_out}")
     return {
         "frames": len(images),
         "inside_blocks": inside_count,
@@ -240,20 +275,27 @@ def build(*, approved: bool = False):
         "height": total_h,
         "median_saturation": round(median_sat, 1),
         "mean_saturation": round(mean_sat, 1),
+        "review": is_review,
+        "scroll": str(scroll_out),
+        "sheet": str(sheet_out),
     }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument(
+        "--review",
+        action="store_true",
+        help="создать полную проверочную ленту с маркировкой НЕ УТВЕРЖДЕНО",
+    )
+    modes.add_argument(
         "--approved",
         action="store_true",
-        help="подтверждает, что автор уже утвердил код и текст Главы 3",
+        help="создать канонические финальные файлы после утверждения главы",
     )
     args = parser.parse_args()
-    if not args.approved:
-        parser.error("сборка заблокирована до авторского утверждения; нужен --approved")
-    build(approved=True)
+    build(approved=args.approved, review=args.review)
 
 
 if __name__ == "__main__":

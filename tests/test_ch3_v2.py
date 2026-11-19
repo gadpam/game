@@ -29,10 +29,17 @@ from build_ch3_v2_revisions import (
     AWAY_SCORE,
     AWAY_TEAM,
     FINAL_SCORE,
+    GOAL_AREA_DEPTH_METRES,
+    GOAL_MINUTE,
+    GOAL_OUT,
+    GOAL_SOURCE_CROSSBAR_Y,
+    GOAL_SOURCE_GROUND_Y,
+    GOAL_SOURCE_POSTS_X,
+    GOAL_SRC,
     HOME_SCORE,
     HOME_TEAM,
-    SCOREBOARD_OUT,
-    SCORE_MINUTE,
+    PENALTY_AREA_DEPTH_METRES,
+    REGULATION_GOAL_METRES,
     TACKLE_OUT,
     WHISTLE_OUT,
     WHISTLE_SRC,
@@ -44,7 +51,9 @@ from build_ch3_v2_lettering import (
     COACH_AFTER,
     COACH_AFTER_RENDER,
     COACH_BRIEFING,
+    FINAL_SCORE_STAMP,
     FINAL_WHISTLE_SFX,
+    GOAL_SFX,
     INNER_CHAIN,
     MATCH_STAMP,
     MINUTE_STAMP,
@@ -53,8 +62,11 @@ from build_ch3_v2_lettering import (
     VETROV_REPLY,
 )
 from build_ch3_v2_scroll import (
+    OUT_REVIEW_SCROLL,
+    OUT_REVIEW_SHEET,
     OUT_SCROLL,
     OUT_SHEET,
+    REVIEW_LABEL,
     build as build_scroll,
 )
 from build_ch3_v2_system import (
@@ -93,8 +105,8 @@ LEGACY_LOCKS = {
 
 EXPECTED_INNER_CHAIN = (
     ("Сегодня — с первых минут.",),
-    ("Шатского после травмы берегут.",),
-    ("В центре — я.",),
+    ("«Горец» — любительский клуб.",),
+    ("У нас ротация.", "Шатского после травмы берегут.", "Поэтому в центре — я."),
     ("Три.",),
     ("Не лезть.",),
     ("Ждать.",),
@@ -160,7 +172,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertTrue(output.is_file())
         with Image.open(output) as image:
             self.assertEqual(image.width, 800)
-            self.assertEqual(image.height, 15478)
+            self.assertEqual(image.height, 15591)
 
         hashes = set()
         for index, (_, number, height, *_rest) in enumerate(CH3_V2_SCORE[:10], start=1):
@@ -217,7 +229,7 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         )
         self.assertEqual(set(BACK_PLACEMENTS), {"14", "17"})
         self.assertEqual(set(TEAMMATE_SHORTS_PLACEMENTS), {"13"})
-        self.assertEqual(set(TEAMMATE_BACK_PLACEMENTS), {"14"})
+        self.assertEqual(set(TEAMMATE_BACK_PLACEMENTS), {"12", "14"})
         visible_numbers = {
             number
             for placements in (
@@ -231,14 +243,19 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
 
     def test_text_contract_is_concise_and_matches_script(self):
         self.assertEqual(INNER_CHAIN, EXPECTED_INNER_CHAIN)
-        self.assertEqual(OPENING_STAMP, "КУБОК · ДЕНЬ МАТЧА")
+        self.assertEqual(OPENING_STAMP, "КУБОК · РАННИЙ РАУНД")
         self.assertEqual(MATCH_STAMP, "«ГОРЕЦ» — «ТОРПЕДО-2» · КУБОК")
         self.assertEqual(MINUTE_STAMP, "60′")
+        self.assertEqual(GOAL_SFX, "ГОООЛ!")
         self.assertEqual(FINAL_WHISTLE_SFX, "ФЬЮ-ИТЬ!")
+        self.assertEqual(FINAL_SCORE_STAMP, "«ГОРЕЦ» 0:1 «ТОРПЕДО-2»")
         self.assertEqual(
-            (HOME_TEAM, HOME_SCORE, AWAY_SCORE, AWAY_TEAM, SCORE_MINUTE, FINAL_SCORE),
-            ("ГОРЕЦ", 0, 1, "ТОРПЕДО-2", "89′", "ГОРЕЦ 0:1 ТОРПЕДО-2"),
+            (HOME_TEAM, HOME_SCORE, AWAY_SCORE, AWAY_TEAM, GOAL_MINUTE, FINAL_SCORE),
+            ("ГОРЕЦ", 0, 1, "ТОРПЕДО-2", "74′", "ГОРЕЦ 0:1 ТОРПЕДО-2"),
         )
+        self.assertEqual(REGULATION_GOAL_METRES, (7.32, 2.44))
+        self.assertEqual(PENALTY_AREA_DEPTH_METRES, 16.5)
+        self.assertEqual(GOAL_AREA_DEPTH_METRES, 5.5)
         self.assertEqual(COACH_BRIEFING, ("Первый час играешь.", "Потом выйдет Мельник."))
         self.assertEqual(SUB_CALL, ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!"))
         self.assertEqual(
@@ -256,7 +273,15 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         exact_lines = [line for group in INNER_CHAIN for line in group]
         exact_lines += list(COACH_BRIEFING + VETROV_REPLY + SUB_CALL)
         exact_lines += [line for group in COACH_AFTER for line in group]
-        exact_lines += [OPENING_STAMP, MATCH_STAMP, MINUTE_STAMP, FINAL_WHISTLE_SFX]
+        exact_lines += [
+            OPENING_STAMP,
+            MATCH_STAMP,
+            MINUTE_STAMP,
+            GOAL_MINUTE,
+            GOAL_SFX,
+            FINAL_SCORE_STAMP,
+            FINAL_WHISTLE_SFX,
+        ]
         for line in exact_lines:
             with self.subTest(script_line=line):
                 self.assertIn(line.casefold(), script)
@@ -340,16 +365,27 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
             self.assertEqual(sha256(bus), sha256(rebuilt_bus))
             self.assertEqual(sha256(subbed), sha256(rebuilt_subbed))
 
+        self.assertEqual(GOAL_SRC, Path("ch3/v2_12_melnik_goal_regulation_src.jpg"))
+        self.assertGreater(
+            (GOAL_SOURCE_POSTS_X[1] - GOAL_SOURCE_POSTS_X[0]) / 768,
+            0.80,
+        )
+        self.assertGreater(GOAL_SOURCE_GROUND_Y - GOAL_SOURCE_CROSSBAR_Y, 450)
+
         revision_outputs = tuple(ROOT / path for path in (
-            TACKLE_OUT, SCOREBOARD_OUT, WHISTLE_OUT
+            TACKLE_OUT, GOAL_OUT, WHISTLE_OUT
         ))
         before = tuple(sha256(path) for path in revision_outputs)
         build_revisions()
         self.assertEqual(before, tuple(sha256(path) for path in revision_outputs))
+        self.assertNotEqual(sha256(ROOT / GOAL_SRC), sha256(ROOT / GOAL_OUT))
         self.assertNotEqual(sha256(ROOT / WHISTLE_SRC), sha256(ROOT / WHISTLE_OUT))
-        with Image.open(ROOT / SCOREBOARD_OUT) as scoreboard:
-            self.assertEqual(scoreboard.size, (800, 1320))
-        self.assertNotIn("ch3/v2_12_bench_detail.jpg", [path for path, *_ in CH3_V2_SCORE])
+        with Image.open(ROOT / GOAL_OUT) as goal:
+            self.assertEqual(goal.size, (800, 1320))
+        active_paths = [path for path, *_ in CH3_V2_SCORE]
+        self.assertIn("ch3/v2_12_melnik_goal.jpg", active_paths)
+        self.assertNotIn("ch3/v2_12_bench_detail.jpg", active_paths)
+        self.assertNotIn("ch3/v2_12_scoreboard.jpg", active_paths)
 
         epilogue_outputs = tuple(ROOT / path for path in (
             REACTION_OUT, EMPTY_OUT, BUS_WINDOW_OUT
@@ -360,11 +396,23 @@ class ChapterThreeV2CandidateTests(unittest.TestCase):
         self.assertTrue(str(REACTION_SRC).startswith("ch3/v2_"))
         self.assertFalse(str(REACTION_SRC).startswith("ch1/"))
 
-    def test_full_scroll_is_intentionally_deferred(self):
+    def test_canonical_full_scroll_is_deferred_but_review_build_exists(self):
         with self.assertRaises(PermissionError):
             build_scroll()
+        with self.assertRaises(ValueError):
+            build_scroll(approved=True, review=True)
         self.assertFalse((ROOT / OUT_SCROLL).exists())
         self.assertFalse((ROOT / OUT_SHEET).exists())
+
+        self.assertEqual(REVIEW_LABEL, "ПРОВЕРОЧНАЯ СБОРКА · НЕ УТВЕРЖДЕНО")
+        review_outputs = {
+            OUT_REVIEW_SCROLL: (800, 31004),
+            OUT_REVIEW_SHEET: (1908, 2957),
+        }
+        for relative, expected_size in review_outputs.items():
+            with self.subTest(review=relative), Image.open(ROOT / relative) as image:
+                self.assertEqual(image.size, expected_size)
+                self.assertEqual(image.mode, "RGB")
 
     def test_legacy_chapter_three_is_byte_locked(self):
         for relative, expected in LEGACY_LOCKS.items():

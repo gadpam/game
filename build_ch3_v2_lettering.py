@@ -10,6 +10,13 @@ from pathlib import Path
 from PIL import Image
 
 from build_ch3_v2_numbers import apply_ch3_numbers
+from build_ch3_v2_revisions import (
+    AWAY_SCORE,
+    AWAY_TEAM,
+    GOAL_MINUTE,
+    HOME_SCORE,
+    HOME_TEAM,
+)
 from build_lettering import (
     DARK,
     PAPER,
@@ -26,8 +33,8 @@ W = 800
 
 INNER_CHAIN = (
     ("Сегодня — с первых минут.",),
-    ("Шатского после травмы берегут.",),
-    ("В центре — я.",),
+    ("«Горец» — любительский клуб.",),
+    ("У нас ротация.", "Шатского после травмы берегут.", "Поэтому в центре — я."),
     ("Три.",),
     ("Не лезть.",),
     ("Ждать.",),
@@ -37,10 +44,12 @@ INNER_CHAIN = (
     ("Квест сработал.",),
 )
 
-OPENING_STAMP = "КУБОК · ДЕНЬ МАТЧА"
+OPENING_STAMP = "КУБОК · РАННИЙ РАУНД"
 MATCH_STAMP = "«ГОРЕЦ» — «ТОРПЕДО-2» · КУБОК"
 MINUTE_STAMP = "60′"
+GOAL_SFX = "ГОООЛ!"
 FINAL_WHISTLE_SFX = "ФЬЮ-ИТЬ!"
+FINAL_SCORE_STAMP = f"«{HOME_TEAM}» {HOME_SCORE}:{AWAY_SCORE} «{AWAY_TEAM}»"
 COACH_BRIEFING = ("Первый час играешь.", "Потом выйдет Мельник.")
 VETROV_REPLY = ("Понял.",)
 SUB_CALL = ("ВЕТРОВ УХОДИТ!", "МЕЛЬНИК ВЫХОДИТ!")
@@ -150,12 +159,39 @@ def apply_ch3_v2_frame(num: str, image_rgb: Image.Image):
             spikes=24,
         )
 
+    elif num == "12":
+        keepouts = [
+            ("мельник", (245, 510, 620, 1160)),
+            ("ворота", (90, 470, 720, 830)),
+            ("мяч в сетке", (560, 625, 670, 755)),
+        ]
+        stamp(image, (34, 32), GOAL_MINUTE, boxes, keepouts, tag="12_minute", size=31)
+        sfx(
+            image,
+            (650, 286),
+            GOAL_SFX,
+            boxes,
+            keepouts,
+            tag="12_goal",
+            size=68,
+            angle=-5.0,
+        )
+
     elif num == "13":
         keepouts = [
             ("судья", (378, 580, 530, 940)),
             ("игрок слева", (100, 690, 250, 1010)),
             ("игрок справа", (555, 745, 735, 1230)),
         ]
+        stamp(
+            image,
+            (24, 34),
+            FINAL_SCORE_STAMP,
+            boxes,
+            keepouts,
+            tag="13_score",
+            size=26,
+        )
         sfx(
             image,
             (650, 350),
@@ -237,7 +273,7 @@ CH3_V2_SCORE = [
         bg=(PAPER, PAPER), pad_top=82, pad_bot=88, items=[
             {"lines": INNER_CHAIN[7], "pos": "center", "size": 36, "w": "em"},
         ])),
-    ("ch3/v2_12_scoreboard.jpg", "12", 1320, 3, "paper", dict(
+    ("ch3/v2_12_melnik_goal.jpg", "12", 1320, 3, "paper", dict(
         bg=(PAPER, PAPER), min_h=110, items=[])),
     ("ch3/v2_13_final_whistle.jpg", "13", 1420, 3, "paper", dict(
         bg=(PAPER, PAPER), min_h=110, items=[])),
