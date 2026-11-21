@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+Презентация/preview/
+Презентация/contact_sheet.png
