@@ -4,9 +4,11 @@
 
     .venv/bin/python presentation/build.py
 
-Результат:
-    presentation/out/Родительское_собрание_3_курс.pptx   — редактируемый файл
-    presentation/out/preview/slide_01.png … slide_20.png   — превью 1920x1080
+Результат (в папке «Презентация» в корне репозитория):
+    Презентация/Родительское_собрание_3_курс.pptx   — редактируемый файл
+    Презентация/Родительское_собрание_3_курс.pdf    — раздаточный вариант
+    Презентация/preview/slide_01.png … slide_22.png   — превью 1920x1080
+    Презентация/contact_sheet.png                     — все слайды на одном листе
 """
 from __future__ import annotations
 
@@ -14,12 +16,15 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import content  # noqa: E402
 from deck import BODY_BOTTOM, SLIDE_H, render_png, render_pptx  # noqa: E402
 
-OUT = os.path.join(HERE, "out")
+# готовые файлы — в папке «Презентация» в корне репозитория, чтобы их
+# было легко найти и не искать по вложенным каталогам
+OUT = os.path.join(ROOT, "Презентация")
 PREVIEW = os.path.join(OUT, "preview")
 PPTX_PATH = os.path.join(OUT, "Родительское_собрание_3_курс.pptx")
 PDF_PATH = os.path.join(OUT, "Родительское_собрание_3_курс.pdf")
@@ -108,7 +113,7 @@ def main() -> int:
     fonts_dir = os.path.join(OUT, "Шрифты_Exo_2")
     os.makedirs(fonts_dir, exist_ok=True)
     for f in ("Exo2-Light.ttf", "Exo2-Medium.ttf", "Exo2-Bold.ttf"):
-        src = os.path.join(os.path.dirname(HERE), f)
+        src = os.path.join(ROOT, f)
         dst = os.path.join(fonts_dir, f)
         if not os.path.exists(dst):
             with open(src, "rb") as a, open(dst, "wb") as b:

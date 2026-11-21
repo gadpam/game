@@ -1,5 +1,5 @@
 .venv/
 __pycache__/
 *.pyc
-presentation/out/preview/
-presentation/out/contact_sheet.png
+Презентация/preview/
+Презентация/contact_sheet.png
