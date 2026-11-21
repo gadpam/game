@@ -12,16 +12,33 @@ from __future__ import annotations
 from math import ceil
 
 import data
-from deck import (ACCENT, ACCENT2, ACCENT2_SOFT, ACCENT_SOFT, BODY, CARD, CW,
+from deck import (ACCENT, ACCENT2, ACCENT2_SOFT, ACCENT_SOFT, BODY, CARD, CW, DPI,
                   GREEN, GREEN_SOFT, INK, LINE, M_L, MUTED, PAPER, SLIDE_H,
-                  SLIDE_W, BODY_BOTTOM, BODY_TOP, Canvas, block_height, para, run)
+                  SLIDE_W, BODY_BOTTOM, BODY_TOP, Canvas, block_height, measure,
+                  para, run)
 
 SOFT_NUM = "CFE3E0"
 AMBER = "B8860B"
 AMBER_SOFT = "F6EEDD"
+TRACK = "EBE9E3"
 STATUS_COLOR = {"ok": GREEN, "near": ACCENT, "mid": AMBER, "zero": ACCENT2}
 TOTAL = 22
 COURSE = "3 курс · П32 · Программирование"
+
+# пороги зон: (зелёный от, жёлтый от) — по ним красим цифры и полоски
+ZONE_ABS = (85, 60)      # абсолютная успеваемость, %
+ZONE_AVG = (7.0, 5.0)    # средний балл (шкала 1–10)
+ZONE_QUAL = (70, 50)     # качественная успеваемость, %
+
+
+def zone_color(value: float, limits) -> str:
+    """Цвет зоны: зелёный — сильная позиция, жёлтый — средняя, терракота — внимание."""
+    green, amber = limits
+    if value >= green:
+        return GREEN
+    if value >= amber:
+        return AMBER
+    return ACCENT2
 
 
 # ─────────────────────────────────────────────────────── блоки-шаблоны
@@ -269,44 +286,75 @@ def s04_monitoring() -> Canvas:
 def s05_subjects() -> Canvas:
     c = Canvas("table")
     head(c, "Мониторинг", "Успеваемость группы за сентябрь–октябрь", 5)
-    name_w = 3.05
-    bar_x = M_L + name_w + 0.15
-    bar_w = 3.30
-    top = 2.42
-    h = 0.46
-    c.text(M_L, 2.08, name_w, [para(run("Предмет", "medium", 9.5, MUTED, spc=1.2, caps=True), space=0)])
-    c.text(bar_x, 2.08, bar_w, [para(run("Абсолютная успеваемость", "medium", 9.5, MUTED, spc=1.2, caps=True), space=0)])
-    c.text(M_L + CW - 2.65, 2.08, 1.15,
-           [para(run("Средний балл", "medium", 9.5, MUTED, spc=1.2, caps=True), align="r", space=0)])
-    c.text(M_L + CW - 1.30, 2.08, 1.30,
-           [para(run("Качественная", "medium", 9.5, MUTED, spc=1.2, caps=True), align="r", space=0)])
+
+    name_x, name_w = M_L, 2.45
+    b1_x, b1_w = 3.55, 2.15
+    p1_r = 6.35
+    sc_x, sc_w = 6.70, 2.30
+    avg_r = 9.70
+    b2_x, b2_w = 10.05, 1.35
+    p2_r = M_L + CW
+    top, rh = 2.52, 0.44
+
+    def hdr(x, w, l1, l2):
+        c.text(x, 2.00, w,
+               [para(run(l1, "medium", 9.5, MUTED, spc=1.2, caps=True), space=0, line=1.2),
+                para(run(l2, "medium", 9.5, MUTED, spc=1.2, caps=True), space=0, line=1.2)])
+
+    c.text(name_x, 2.00, name_w, [para(run("Предмет", "medium", 9.5, MUTED, spc=1.2, caps=True), space=0)])
+    hdr(b1_x, p1_r - b1_x, "Абсолютная", "успеваемость")
+    hdr(sc_x, avg_r - sc_x, "Средний балл", "по шкале 1–10")
+    hdr(b2_x, p2_r - b2_x, "Качественная", "успеваемость")
+    c.hline(M_L, 2.42, CW, LINE, 0.75)
+
     for i, (name, abs_p, avg, qual) in enumerate(data.SUBJECTS):
-        y = top + i * h
+        y = top + i * rh
         hi = (name == data.SUBJECT)
         if hi:
-            c.rect(M_L - 0.22, y - 0.04, CW + 0.44, h - 0.04, fill=ACCENT2_SOFT, radius=0.06)
-        c.text(M_L, y + 0.05, name_w,
+            c.rect(M_L - 0.22, y - 0.02, CW + 0.44, rh - 0.05, fill=ACCENT2_SOFT, radius=0.06)
+        c.text(name_x, y + 0.09, name_w,
                [para(run(name, "bold" if hi else "medium", 13 if hi else 12.5,
                          INK if hi else BODY), space=0)])
-        c.rect(bar_x, y + 0.13, bar_w, 0.15,
-               fill=ACCENT_SOFT if not hi else "EFD9CF", radius=0.075)
-        c.rect(bar_x, y + 0.13, bar_w * abs_p / 100.0, 0.15,
-               fill=ACCENT if not hi else ACCENT2, radius=0.075)
-        c.text(bar_x + bar_w + 0.12, y + 0.02, 0.85,
-               [para(run(f"{abs_p}%", "bold" if hi else "medium", 12.5,
-                         ACCENT if not hi else ACCENT2), space=0)])
-        c.text(M_L + CW - 2.65, y + 0.02, 1.15,
-               [para(run(num(avg), "bold" if hi else "medium", 13,
-                         INK if hi else BODY), align="r", space=0)])
-        c.text(M_L + CW - 1.30, y + 0.04, 1.30,
-               [para(run(f"{qual}%", "light", 11.5, ACCENT2 if hi else MUTED), align="r", space=0)])
-    y = top + len(data.SUBJECTS) * h + 0.06
-    c.hline(M_L, y, CW, LINE, 0.75)
-    c.text(M_L, y + 0.18, CW,
+
+        # абсолютная успеваемость — полоса 0…100 %
+        col1 = zone_color(abs_p, ZONE_ABS)
+        c.rect(b1_x, y + 0.165, b1_w, 0.15, fill=TRACK, radius=0.075)
+        c.rect(b1_x, y + 0.165, b1_w * abs_p / 100.0, 0.15, fill=col1, radius=0.075)
+        c.text(p1_r - 0.62, y + 0.09, 0.62,
+               [para(run(f"{abs_p}%", "medium", 11.5, col1), align="r", space=0)])
+
+        # средний балл — полоса по шкале 1…10 с засечкой на месте значения
+        col2 = zone_color(avg, ZONE_AVG)
+        c.rect(sc_x, y + 0.165, sc_w, 0.15, fill=TRACK, radius=0.075)
+        c.rect(sc_x, y + 0.165, sc_w * (avg - 1) / 9.0, 0.15, fill=col2, radius=0.075)
+        mx = sc_x + sc_w * (avg - 1) / 9.0
+        c.rect(mx - 0.022, y + 0.095, 0.044, 0.29, fill=INK, radius=0.022)
+        c.text(avg_r - 0.70, y + 0.08, 0.70,
+               [para(run(num(avg), "bold" if hi else "medium", 13, col2), align="r", space=0)])
+
+        # качественная успеваемость — полоса 0…100 %
+        col3 = zone_color(qual, ZONE_QUAL)
+        c.rect(b2_x, y + 0.165, b2_w, 0.15, fill=TRACK, radius=0.075)
+        c.rect(b2_x, y + 0.165, b2_w * qual / 100.0, 0.15, fill=col3, radius=0.075)
+        c.text(p2_r - 0.62, y + 0.09, 0.62,
+               [para(run(f"{qual}%", "medium", 11.5, col3), align="r", space=0)])
+
+    ly = 6.14
+    c.text(M_L, ly, 1.70, [para(run("Цвет — зона позиции:", "light", 10.5, MUTED), space=0)])
+    lx = 2.59
+    for label, col in (("сильная", GREEN), ("средняя", AMBER), ("зона внимания", ACCENT2)):
+        w = measure(label, "light", 10.5) / DPI
+        c.dot(lx + 0.07, ly + 0.09, 0.055, col)
+        c.text(lx + 0.22, ly, w + 0.04, [para(run(label, "light", 10.5, MUTED), space=0)])
+        lx += 0.22 + w + 0.34
+    c.text(M_L + CW - 4.80, ly, 4.80,
+           [para(run("пороги: успеваемость 85/60% · балл 7,0/5,0 · качественная 70/50%",
+                     "light", 10.5, MUTED), align="r", space=0)])
+    c.text(M_L, ly + 0.26, CW,
            [para(run(f"По своему предмету (КПиЯП) группа пока отстаёт: отметка есть у {data.ATTESTED_KPIAP} из "
                      f"{data.STUDENTS_TOTAL} студентов, средний балл — {num(data.AVG_KPIAP)}. "
                      "Разбираем по каждому, с кем идём дальше.",
-                     "light", 12.5, MUTED), space=0, line=1.3)])
+                     "light", 11.5, BODY), space=0, line=1.3)])
     return c
 
 
@@ -729,7 +777,9 @@ NOTES = [
     "Показать маршрут встречи. Предупредить, что в конце оставим 10 минут на вопросы родителей.",
     "Первый блок — про контроль. Сказать прямо: мониторинг у нас еженедельный, а не разовый.",
     "Объяснить механику: ведомость + журнал + средний балл. Подчеркнуть, что мы не ждём конца четверти.",
-    "Назвать цифры по предметам. Не читать все восемь — остановиться на КПиЯП.",
+    "Назвать цифры по предметам. Не читать все восемь — остановиться на КПиЯП. "
+    "Цвет = зона позиции: зелёный — сильная (успеваемость от 85%, балл от 7, качественная от 70%), "
+    "жёлтый — средняя, терракота — зона внимания.",
     "Ключевой слайд блока: почему средний балл по КПиЯП низкий. Отметка зависит от лабораторных.",
     "Четыре группы. Назвать цифры и что делаем с каждой. Здесь можно назвать имена — но только если готовы.",
     "Слайд для преподавателя: если показывать родителям не хотите — пропустите и скажите, что разберёте лично. "
